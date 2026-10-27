@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Identifications{% endblock %}
+{% block content %}
+<h1 class="text-2xl mb-5">Identifications & visage</h1>
+
+<section class="card-pad mb-6">
+  <h2 class="section-title mb-3 flex items-center gap-2">{% icon 'shield' 'w-5 h-5 text-maya' %} Confidentialité faciale</h2>
+  {% if encoding %}
+    <div class="flex items-center gap-4">
+      <img src="{{ encoding.photo_reference.url }}" class="w-16 h-16 rounded-full object-cover ring-2 ring-maya" alt="Référence">
+      <div class="flex-1 text-sm">
+        <p>Ton empreinte faciale est active : tes amis peuvent te taguer automatiquement.</p>
+        <p class="text-xs text-muted">Calculée le {{ encoding.date|date:"j F Y" }} depuis ta photo de profil · {{ encoding.vecteur_encoding|length }} dimensions</p>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <form method="post" action="{% url 'faces:encoding' 'recalculer' %}">{% csrf_token %}<button class="btn-outline btn-sm">{% icon 'refresh' 'w-4 h-4' %} Recalculer</button></form>
+      <form method="post" action="{% url 'faces:encoding' 'supprimer' %}">{% csrf_token %}<button class="btn-ghost btn-sm text-salmon">{% icon 'trash' 'w-4 h-4' %} Supprimer mon empreinte</button></form>
+    </div>
+  {% else %}
+    <p class="text-sm text-muted">Aucune empreinte faciale enregistrée. Tes amis ne peuvent pas te reconnaître automatiquement.</p>
+    <div class="flex gap-2 mt-4">
+      {% if user.photo_profil %}
+        <form method="post" action="{% url 'faces:encoding' 'recalculer' %}">{% csrf_token %}<button class="btn-primary btn-sm">{% icon 'scan-face' 'w-4 h-4' %} Activer depuis ma photo de profil</button></form>
+      {% else %}
+        <a href="{% url 'accounts:edit' %}" class="btn-primary btn-sm">Ajouter une photo de profil</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+<h2 class="section-title mb-3">Photos où je suis identifié(e)</h2>
+<div class="space-y-3">
+  {% for tag in tags %}
+    {% with post=tag.detected_face.post %}
+    <div class="card p-3 flex items-center gap-3">
+      <a href="{{ post.get_absolute_url }}"><img src="{{ post.image.url }}" class="w-16 h-16 rounded-xl object-cover" alt=""></a>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm">Publiée par <a href="{{ post.auteur.get_absolute_url }}" class="font-medium hover:underline">{{ post.auteur.display_name }}</a></p>
+        <p class="text-xs text-muted">{{ tag.date|short_since }}{% if tag.auto %} · reconnu(e) par l'IA{% endif %}</p>
+      </div>
+      <form method="post" action="{% url 'faces:remove_tag' tag.pk %}">{% csrf_token %}<button class="btn-ghost btn-sm text-salmon">Retirer le tag</button></form>
+    </div>
+    {% endwith %}
+  {% empty %}
+    <p class="card-pad text-center text-muted text-sm">Personne ne t'a encore identifié(e).</p>
+  {% endfor %}
+</div>
+{% endblock %}

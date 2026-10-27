@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Recherche{% endblock %}
+{% block content %}
+<form class="relative mb-6">
+  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted">{% icon 'search' 'w-5 h-5' %}</span>
+  <input type="search" name="q" value="{{ q }}" placeholder="Personnes, #hashtags, légendes…" class="!pl-12 !rounded-full" autofocus>
+</form>
+
+{% if q %}
+  {% if users %}
+  <section class="card-pad mb-6">
+    <h2 class="section-title mb-2">Personnes</h2>
+    {% for u in users %}{% include "partials/user_row.html" %}{% endfor %}
+  </section>
+  {% endif %}
+  <h2 class="section-title mb-3">Publications</h2>
+  {% include "partials/post_grid.html" with empty_text="Aucune publication ne correspond à ta recherche." %}
+{% else %}
+  {% if trending %}
+  <section class="mb-6">
+    <h2 class="section-title mb-3">Tendances</h2>
+    <div class="flex flex-wrap gap-2">
+      {% for tag, count in trending %}<a href="{% url 'posts:hashtag' tag %}" class="chip hover:border-maya">#{{ tag }} <span class="text-muted text-xs">{{ count }}</span></a>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  <h2 class="section-title mb-3">Découvrir</h2>
+  {% include "partials/post_grid.html" %}
+{% endif %}
+{% endblock %}

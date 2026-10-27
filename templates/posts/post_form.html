@@ -1,0 +1,104 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Nouveau post{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <a href="{% url 'core:home' %}" class="btn-ghost btn-sm !p-2" aria-label="Retour">{% icon 'arrow-left' 'w-5 h-5' %}</a>
+  <h1 class="text-2xl">Nouveau post</h1>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="space-y-5" novalidate>{% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for f in form.hidden_fields %}{{ f }}{% endfor %}
+
+  <label class="block card overflow-hidden cursor-pointer group" for="{{ form.image.id_for_label }}">
+    <div class="relative aspect-[4/3] bg-surface2 grid place-items-center" data-image-empty>
+      <div class="absolute inset-0 overflow-hidden">
+        <span class="absolute top-[18%] left-[14%] w-14 h-14 rounded-full bg-salmon/80"></span>
+        <svg viewBox="0 0 100 50" preserveAspectRatio="none" class="absolute bottom-0 w-full h-1/2"><path d="M0 50 28 14l18 18 16-16 38 34Z" fill="#8B7BFF" opacity=".55"/></svg>
+      </div>
+      <div class="relative text-center">
+        <span class="mx-auto grid place-items-center w-14 h-14 rounded-full bg-maya text-midnight mb-3 group-hover:scale-105 transition">{% icon 'image' 'w-6 h-6' %}</span>
+        <p class="font-medium">Choisis une photo</p>
+        <p class="text-xs text-muted">JPG, PNG, WEBP · 10 Mo max</p>
+      </div>
+    </div>
+    <img data-image-preview class="hidden w-full max-h-[520px] object-contain bg-black/30" alt="Aperçu">
+  </label>
+  <div class="hidden">{{ form.image }}</div>
+  {{ form.image.errors }}
+
+  <section id="vocal">
+    <p class="text-sm text-muted mb-2">Message vocal <span class="text-xs">(optionnel — transcrit automatiquement)</span></p>
+    {{ form.audio }}
+    {% include "partials/recorder.html" with allow_upload=True %}
+    {{ form.audio.errors }}
+  </section>
+
+  <section class="space-y-2">
+    {% include "partials/form_field.html" with field=form.caption %}
+  </section>
+
+  {# Panneau IA : légende stylisée + hashtags (Gemini) #}
+  <section class="card p-4 space-y-4" data-ai-panel data-url="{% url 'ai_caption' %}">
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-10 h-10 rounded-full bg-peri text-white shrink-0">{% icon 'sparkles' 'w-5 h-5' %}</span>
+      <div class="flex-1">
+        <p class="font-medium">Résultat IA</p>
+        <p class="text-xs text-muted">Choisis un style puis laisse Blink écrire pour toi.</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="chip chip-active" data-style="poetique">Poétique</button>
+      <button type="button" class="chip" data-style="marketing">Marketing</button>
+      <button type="button" class="chip" data-style="humoristique">Humoristique</button>
+    </div>
+    {% with templates=user.prompt_templates.all %}
+      {% if templates %}
+      <select data-ai-template class="!py-2 text-sm">
+        <option value="">Sans modèle de prompt</option>
+        {% for t in templates %}{% if t.type == 'description' %}<option value="{{ t.pk }}">{{ t.nom }}</option>{% endif %}{% endfor %}
+      </select>
+      {% endif %}
+    {% endwith %}
+    <button type="button" class="btn-ai w-full" data-ai-generate>{% icon 'sparkles' 'w-4 h-4' %} Générer avec l'IA</button>
+
+    <div class="hidden space-y-3" data-ai-loading>
+      <div class="skeleton h-4 w-5/6"></div><div class="skeleton h-4 w-2/3"></div>
+      <div class="flex gap-2"><div class="skeleton h-7 w-24 !rounded-full"></div><div class="skeleton h-7 w-20 !rounded-full"></div></div>
+    </div>
+
+    <div class="hidden space-y-3" data-ai-result>
+      <div class="rounded-2xl bg-surface2 p-4 flex gap-2">
+        <span class="text-peri shrink-0 mt-0.5">{% icon 'sparkles' 'w-4 h-4' %}</span>
+        <p class="leading-relaxed" data-ai-caption></p>
+      </div>
+      <div>
+        <p class="text-xs text-muted mb-2">Blink a trouvé des hashtags — clique pour (dé)sélectionner :</p>
+        <div class="flex flex-wrap gap-2" data-ai-tags></div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button type="button" class="btn-outline btn-sm" data-ai-use>{% icon 'check' 'w-4 h-4' %} Utiliser cette légende</button>
+        <button type="button" class="btn-ghost btn-sm" data-ai-regenerate>{% icon 'refresh' 'w-4 h-4' %} Régénérer</button>
+        <span class="ml-auto text-xs text-muted">Moteur : <span data-ai-engine></span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="space-y-2">
+    <p class="text-sm text-muted">Visibilité</p>
+    <div class="grid grid-cols-3 gap-2">
+      {% for value, label in form.visibilite.field.choices %}
+        <label class="cursor-pointer">
+          <input type="radio" name="visibilite" value="{{ value }}" class="peer sr-only" {% if form.visibilite.value == value %}checked{% endif %}>
+          <span class="flex items-center justify-center gap-2 rounded-2xl border border-line bg-surface2 py-3 text-sm peer-checked:border-maya peer-checked:text-maya transition">
+            {% if value == 'public' %}{% icon 'globe' 'w-4 h-4' %}{% elif value == 'amis' %}{% icon 'users' 'w-4 h-4' %}{% else %}{% icon 'lock' 'w-4 h-4' %}{% endif %}{{ label }}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <p class="text-xs text-muted flex items-center gap-2">{% icon 'scan-face' 'w-4 h-4 text-maya' %} Après publication, Blink détecte les visages et te propose de taguer tes amis.</p>
+  <button class="btn-primary w-full text-lg">{% icon 'send' 'w-5 h-5' %} Publier</button>
+</form>
+{% endblock %}

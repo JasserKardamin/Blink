@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Fil d'actualité{% endblock %}
+{% block container %}max-w-5xl{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-8">
+  <div class="space-y-6 max-w-xl w-full mx-auto">
+    <a href="{% url 'posts:create' %}" class="card flex items-center gap-3 p-3 hover:border-maya/60 transition">
+      {% avatar user 'md' %}
+      <span class="flex-1 text-muted">Quoi de neuf, {{ user.first_name|default:user.username }} ?</span>
+      <span class="grid place-items-center w-10 h-10 rounded-full bg-surface2 text-maya">{% icon 'image' 'w-5 h-5' %}</span>
+      <span class="grid place-items-center w-10 h-10 rounded-full bg-salmon text-midnight">{% icon 'mic' 'w-5 h-5' %}</span>
+    </a>
+
+    {% for post in posts %}
+      {% include "partials/post_card.html" %}
+    {% empty %}
+      <div class="card-pad text-center py-12">
+        {% include "partials/logo.html" with cls="w-16 h-16 mx-auto mb-4" %}
+        <h2 class="text-xl">Ton fil est encore vide</h2>
+        <p class="text-muted mt-2">Publie ta première photo, ajoute des amis ou explore les publications publiques.</p>
+        <div class="mt-6 flex justify-center gap-3 flex-wrap">
+          <a href="{% url 'posts:create' %}" class="btn-primary">{% icon 'plus' 'w-4 h-4' %} Publier</a>
+          <a href="{% url 'posts:explore' %}" class="btn-outline">Explorer</a>
+        </div>
+      </div>
+    {% endfor %}
+    {% include "partials/pagination.html" %}
+  </div>
+
+  <aside class="hidden lg:block space-y-6">
+    <div class="card-pad sticky top-24">
+      <div class="flex items-center gap-3">
+        {% avatar user 'lg' ring=True %}
+        <div class="min-w-0"><p class="font-semibold truncate">{{ user.display_name }}</p><p class="text-sm text-muted">@{{ user.username }}</p></div>
+      </div>
+      {% if suggestions %}
+      <h3 class="text-sm text-muted mt-6 mb-2">Suggestions pour toi</h3>
+      {% for u in suggestions %}
+        <div class="flex items-center gap-3 py-2">
+          <a href="{{ u.get_absolute_url }}">{% avatar u 'sm' %}</a>
+          <a href="{{ u.get_absolute_url }}" class="flex-1 min-w-0 text-sm truncate hover:underline">{{ u.display_name }}</a>
+          <form method="post" action="{% url 'accounts:friend_request' u.username %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            <button class="text-maya text-sm hover:underline">Ajouter</button>
+          </form>
+        </div>
+      {% endfor %}
+      {% endif %}
+      <div class="mt-6 rounded-2xl bg-surface2 p-4 text-xs text-muted space-y-1">
+        <p class="font-medium text-alice text-sm mb-1">Services IA</p>
+        <p>Gemini : {% if AI_STATUS.gemini %}<span class="text-emerald-300">connecté</span>{% else %}mode local{% endif %}</p>
+        <p>Hugging Face : {% if AI_STATUS.hf %}<span class="text-emerald-300">connecté</span>{% else %}mode local{% endif %}</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

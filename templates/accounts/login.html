@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Connexion{% endblock %}
+{% block container %}max-w-sm{% endblock %}
+{% block content %}
+<div class="card p-8 mt-6">
+  <div class="text-center mb-8">
+    {% include "partials/logo.html" with cls="w-20 h-20 mx-auto" %}
+    <h1 class="font-display text-4xl font-bold mt-3">Blink</h1>
+    <p class="text-muted text-sm mt-1">Poste. Parle. L'IA fait le reste.</p>
+  </div>
+  <form method="post" class="space-y-4">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="rounded-2xl bg-salmon/10 border border-salmon/40 text-salmon text-sm p-3">E-mail/nom d'utilisateur ou mot de passe incorrect.</div>{% endif %}
+    {{ form.username }}
+    {{ form.password }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn-primary w-full">Se connecter</button>
+  </form>
+  <p class="text-center mt-6"><a href="{% url 'accounts:signup' %}" class="link">Créer un compte</a></p>
+</div>
+{% endblock %}

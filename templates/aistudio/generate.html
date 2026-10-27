@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}{% if avatar %}Avatar IA{% else %}Filtre IA{% endif %}{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <a href="{% if avatar %}{{ user.get_absolute_url }}{% else %}{{ source.get_absolute_url }}{% endif %}" class="btn-ghost btn-sm !p-2" aria-label="Retour">{% icon 'arrow-left' 'w-5 h-5' %}</a>
+  <h1 class="text-2xl">{% if avatar %}Générer mon avatar{% else %}Transformer la photo{% endif %}</h1>
+</div>
+
+<form method="post" class="space-y-6">{% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="card p-2">
+    <img src="{% if avatar %}{{ user.photo_profil.url }}{% else %}{{ source.image.url }}{% endif %}" class="w-full max-h-80 object-contain rounded-2xl" alt="Image source">
+  </div>
+
+  {% if form.type %}
+  <section class="space-y-2">
+    <p class="text-sm text-muted">Type de transformation</p>
+    {% for choice in form.type %}
+      <label class="flex items-start gap-3 rounded-2xl border border-line bg-surface2 p-4 cursor-pointer has-[:checked]:border-maya">
+        {{ choice.tag }}
+        <span class="text-sm">{{ choice.choice_label }}</span>
+      </label>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="space-y-2">
+    <p class="text-sm text-muted">Style</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {% for choice in form.style %}
+        <label class="cursor-pointer">
+          <input type="radio" name="{{ form.style.html_name }}" value="{{ choice.data.value }}" class="peer sr-only" {% if choice.data.selected %}checked{% endif %}>
+          <span class="block rounded-2xl border border-line bg-surface2 p-3 text-center text-sm peer-checked:border-peri peer-checked:bg-peri/15 transition">
+            {% if choice.data.value == 'anime' %}🎌{% elif choice.data.value == 'peinture' %}🎨{% elif choice.data.value == 'cyberpunk' %}🌆{% elif choice.data.value == 'aquarelle' %}💧{% elif choice.data.value == 'croquis' %}✏️{% else %}📷{% endif %}
+            <span class="block mt-1">{{ choice.choice_label }}</span>
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="grid sm:grid-cols-2 gap-4">
+    {% include "partials/form_field.html" with field=form.filtre %}
+    {% include "partials/form_field.html" with field=form.template %}
+  </div>
+
+  <p class="text-xs text-muted">
+    {% if AI_STATUS.hf %}Les images dérivées et avatars sont générés par Stable Diffusion (Hugging Face) à partir d'une description de ta photo.
+    {% else %}Hugging Face n'est pas configuré : la transformation est réalisée localement avec OpenCV.{% endif %}
+  </p>
+  <button class="btn-ai w-full">{% icon 'sparkles' 'w-4 h-4' %} Générer</button>
+</form>
+{% endblock %}

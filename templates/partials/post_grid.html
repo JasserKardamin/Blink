@@ -1,0 +1,16 @@
+{% load blink_tags %}
+<div class="grid grid-cols-3 gap-1.5 sm:gap-3">
+  {% for post in posts %}
+    <a href="{{ post.get_absolute_url }}" class="group relative aspect-square overflow-hidden rounded-xl sm:rounded-2xl bg-surface2">
+      <img src="{{ post.image.url }}" alt="{{ post.caption|truncatechars:80 }}" class="w-full h-full object-cover transition duration-300 group-hover:scale-105" loading="lazy">
+      <span class="absolute inset-0 bg-midnight/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4 text-sm font-medium">
+        <span class="flex items-center gap-1">{% icon 'heart' 'w-4 h-4' %} {{ post.nb_reactions }}</span>
+        <span class="flex items-center gap-1">{% icon 'message' 'w-4 h-4' %} {{ post.nb_commentaires }}</span>
+      </span>
+      {% if post.audio_posts.all %}<span class="absolute top-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-midnight/70 text-salmon">{% icon 'mic' 'w-4 h-4' %}</span>{% endif %}
+      {% if post.visibilite != 'public' %}<span class="absolute top-2 left-2 grid place-items-center w-7 h-7 rounded-full bg-midnight/70 text-muted">{% if post.visibilite == 'amis' %}{% icon 'users' 'w-3.5 h-3.5' %}{% else %}{% icon 'lock' 'w-3.5 h-3.5' %}{% endif %}</span>{% endif %}
+    </a>
+  {% empty %}
+    <p class="col-span-3 text-center text-muted py-10">{{ empty_text|default:"Aucune publication pour le moment." }}</p>
+  {% endfor %}
+</div>

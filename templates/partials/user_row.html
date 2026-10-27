@@ -1,0 +1,9 @@
+{% load blink_tags %}
+<div class="flex items-center gap-3 py-2">
+  <a href="{{ u.get_absolute_url }}">{% avatar u 'md' %}</a>
+  <div class="min-w-0 flex-1">
+    <a href="{{ u.get_absolute_url }}" class="font-medium hover:underline block truncate">{{ u.display_name }}</a>
+    <p class="text-xs text-muted truncate">@{{ u.username }}{% if u.profile.ville %} · {{ u.profile.ville }}{% endif %}</p>
+  </div>
+  {{ actions|default:"" }}
+</div>

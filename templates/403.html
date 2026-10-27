@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Accès refusé{% endblock %}
+{% block content %}
+<div class="text-center py-20">
+  {% include "partials/logo.html" with cls="w-24 h-24 mx-auto mb-6 opacity-80" %}
+  <p class="font-display text-6xl font-bold text-maya">403</p>
+  <h1 class="text-2xl mt-2">Accès refusé</h1>
+  <p class="text-muted mt-2">Tu n'as pas la permission de voir ce contenu.</p>
+  <a href="/" class="btn-primary mt-8">Retour à l'accueil</a>
+</div>
+{% endblock %}

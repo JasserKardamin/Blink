@@ -1,0 +1,57 @@
+{% load blink_tags %}
+<article class="card overflow-hidden" id="post-{{ post.pk }}">
+  <header class="flex items-center gap-3 px-4 pt-4 pb-3">
+    <a href="{{ post.auteur.get_absolute_url }}">{% avatar post.auteur 'md' %}</a>
+    <div class="min-w-0 flex-1">
+      <a href="{{ post.auteur.get_absolute_url }}" class="font-semibold hover:underline">{{ post.auteur.display_name }}</a>
+      <p class="text-xs text-muted flex items-center gap-1">
+        {{ post.date_creation|short_since }} ·
+        {% if post.visibilite == 'public' %}{% icon 'globe' 'w-3 h-3' %}{% elif post.visibilite == 'amis' %}{% icon 'users' 'w-3 h-3' %}{% else %}{% icon 'lock' 'w-3 h-3' %}{% endif %}
+        {{ post.get_visibilite_display }}
+      </p>
+    </div>
+    <a href="{{ post.get_absolute_url }}" class="btn-ghost btn-sm !p-2" aria-label="Ouvrir">{% icon 'more' 'w-5 h-5' %}</a>
+  </header>
+
+  <a href="{{ post.get_absolute_url }}" class="block px-3">
+    <img src="{{ post.image.url }}" alt="{{ post.caption|default:'Photo de '|add:post.auteur.username|truncatechars:120 }}" class="w-full max-h-[640px] object-cover rounded-2xl bg-surface2" loading="lazy">
+  </a>
+
+  <div class="px-4 pt-3 pb-4 space-y-2">
+    {% if post.caption %}
+      <p class="leading-relaxed">{{ post.caption|hashtagify }}</p>
+    {% endif %}
+    {% if post.caption_is_ai %}
+      <span class="badge badge-peri">{% icon 'sparkles' 'w-3 h-3 mr-1' %} Légende générée par l'IA{% if post.caption_style %} · {{ post.get_caption_style_display }}{% endif %}</span>
+    {% endif %}
+    {% if post.hashtags_ia %}<p class="text-sm">{{ post.hashtags_ia|hashtagify }}</p>{% endif %}
+
+    {% with tagged=post.tagged_users %}
+      {% if tagged %}
+        <p class="text-sm text-muted flex items-center gap-1 flex-wrap">{% icon 'user-check' 'w-4 h-4 text-maya' %} avec
+          {% for u in tagged %}<a href="{{ u.get_absolute_url }}" class="text-alice hover:underline">{{ u.display_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+      {% endif %}
+    {% endwith %}
+
+    {% for ap in post.audio_posts.all %}
+      {% include "partials/audio_player.html" with audio=ap.fichier_audio duree=ap.duree seed=ap.pk transcription=ap.transcription compact=True %}
+    {% endfor %}
+
+    <div class="flex items-center gap-1 pt-1 -ml-2">
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'posts:react' post.pk %}" data-react-form>{% csrf_token %}
+        <input type="hidden" name="type" value="love">
+        <button class="btn-ghost btn-sm !px-2 {% if post.my_reaction %}is-liked{% endif %}" data-react-button aria-label="J'aime" aria-pressed="{{ post.my_reaction|yesno:'true,false' }}">
+          {% icon 'heart' 'w-6 h-6' %}
+          <span data-react-count class="text-sm">{{ post.nb_reactions }}</span>
+        </button>
+      </form>
+      {% else %}
+        <span class="btn-ghost btn-sm !px-2">{% icon 'heart' 'w-6 h-6' %} <span class="text-sm">{{ post.nb_reactions }}</span></span>
+      {% endif %}
+      <a href="{{ post.get_absolute_url }}#commentaires" class="btn-ghost btn-sm !px-2" aria-label="Commenter">{% icon 'message' 'w-6 h-6' %} <span class="text-sm">{{ post.nb_commentaires }}</span></a>
+      <a href="{{ post.get_absolute_url }}#vocal" class="btn-ghost btn-sm !px-2" aria-label="Commentaire vocal">{% icon 'mic' 'w-6 h-6' %}</a>
+    </div>
+  </div>
+</article>

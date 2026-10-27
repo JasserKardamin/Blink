@@ -1,0 +1,71 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Tags des amis{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <a href="{{ post.get_absolute_url }}" class="btn-ghost btn-sm !p-2" aria-label="Retour">{% icon 'arrow-left' 'w-5 h-5' %}</a>
+  <h1 class="text-2xl">Tags des amis</h1>
+</div>
+
+<div class="relative rounded-3xl overflow-hidden bg-maya/20 mb-4">
+  <img src="{{ post.image.url }}" class="w-full block" alt="Photo">
+  {% for face in detected %}
+    <div id="face-box-{{ face.pk }}" class="absolute border-[3px] rounded-xl transition {% if face.current %}border-maya{% else %}border-alice/80 border-dashed{% endif %}"
+         style="left: {{ face.bounding_box.x|stringformat:'s' }}%; top: {{ face.bounding_box.y|stringformat:'s' }}%; width: {{ face.bounding_box.w|stringformat:'s' }}%; height: {{ face.bounding_box.h|stringformat:'s' }}%">
+      {% if face.current %}<span class="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-maya text-midnight text-xs font-semibold px-2 py-0.5">{{ face.current.user_suggere.display_name }}</span>{% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+<div class="card p-4 flex items-center gap-3 mb-4">
+  <span class="grid place-items-center w-10 h-10 rounded-full bg-maya/15 text-maya">{% icon 'user-check' 'w-5 h-5' %}</span>
+  <p class="flex-1">
+    {% if detected %}<b>{{ recognized }}</b> ami{{ recognized|pluralize }} reconnu{{ recognized|pluralize }} sur {{ detected|length }} visage{{ detected|length|pluralize }}
+    {% else %}Aucun visage détecté{% endif %}
+  </p>
+  <form method="post" action="{% url 'faces:redetect' post.pk %}">{% csrf_token %}<button class="btn-ghost btn-sm" title="Relancer l'analyse">{% icon 'refresh' 'w-4 h-4' %}</button></form>
+</div>
+{% if not engine_ready %}
+  <p class="text-xs text-salmon mb-4">Les modèles de reconnaissance faciale ne sont pas encore installés : lance <code>python manage.py setup_face_models</code>. Tu peux quand même taguer tes amis manuellement.</p>
+{% endif %}
+
+<form method="post" class="space-y-4">{% csrf_token %}
+  {% if faces %}
+  <div class="card divide-y divide-line/60">
+    {% for face in faces %}
+      <div class="flex items-center gap-3 p-3" data-face-row="{{ face.pk }}">
+        {% if face.image_source %}<img src="{{ face.image_source.url }}" class="w-14 h-14 rounded-xl object-cover" alt="Visage {{ forloop.counter }}">
+        {% else %}<span class="grid place-items-center w-14 h-14 rounded-xl bg-surface2 text-muted">{% icon 'user' 'w-6 h-6' %}</span>{% endif %}
+        <div class="flex-1 min-w-0 space-y-1">
+          <select name="face_{{ face.pk }}" class="!py-2 text-sm">
+            <option value="">— Personne / ne pas taguer —</option>
+            {% for f in friends %}<option value="{{ f.pk }}" {% if face.current.user_suggere_id == f.pk %}selected{% endif %}>{{ f.display_name }} (@{{ f.username }})</option>{% endfor %}
+          </select>
+          <p class="text-xs text-muted">
+            {% if face.current.statut == 'accepte' %}<span class="text-emerald-300">Tag confirmé</span>
+            {% elif face.current %}Suggestion IA · confiance {{ face.confiance_pct }} %
+            {% elif not face.bounding_box %}Tag manuel
+            {% else %}Visage non reconnu{% endif %}
+          </p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if friends %}
+  <div class="card p-4 space-y-2">
+    <label for="manual_friend">Taguer un ami absent des visages détectés</label>
+    <select name="manual_friend" id="manual_friend" class="!py-2 text-sm">
+      <option value="">—</option>
+      {% for f in friends %}<option value="{{ f.pk }}">{{ f.display_name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grid grid-cols-1 gap-3">
+    <button class="btn-primary w-full">Confirmer les tags</button>
+    <a href="{{ post.get_absolute_url }}" class="btn-outline w-full">Modifier plus tard</a>
+  </div>
+  {% else %}
+    <p class="card-pad text-sm text-muted text-center">Ajoute des amis pour pouvoir les taguer. <a href="{% url 'accounts:friends' %}" class="link">Trouver des amis →</a></p>
+  {% endif %}
+</form>
+{% endblock %}

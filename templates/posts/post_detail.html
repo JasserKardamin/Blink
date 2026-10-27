@@ -1,0 +1,147 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}{{ post.caption|default:"Publication"|truncatechars:50 }}{% endblock %}
+{% block container %}max-w-5xl{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-6 items-start">
+  {# ---- Colonne image ---- #}
+  <div class="space-y-4">
+    <div class="card overflow-hidden p-2">
+      <img src="{{ post.image.url }}" alt="{{ post.caption|truncatechars:120 }}" class="w-full rounded-2xl">
+    </div>
+    {% if ai_versions %}
+    <div class="card-pad">
+      <h2 class="section-title text-base mb-3">Versions IA</h2>
+      <div class="grid grid-cols-3 gap-2">
+        {% for gen in ai_versions %}
+          <a href="{% if gen.user == user %}{{ gen.get_absolute_url }}{% else %}{{ gen.image_generee.url }}{% endif %}" class="block relative rounded-xl overflow-hidden aspect-square">
+            <img src="{{ gen.image_generee.url }}" class="w-full h-full object-cover" alt="Version {{ gen.get_style_display }}" loading="lazy">
+            <span class="absolute bottom-1 left-1 badge bg-midnight/80 text-alice">{{ gen.get_style_display }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ---- Colonne infos + commentaires ---- #}
+  <div class="space-y-4">
+    <section class="card p-5 space-y-3">
+      <header class="flex items-center gap-3">
+        <a href="{{ post.auteur.get_absolute_url }}">{% avatar post.auteur 'md' %}</a>
+        <div class="flex-1 min-w-0">
+          <a href="{{ post.auteur.get_absolute_url }}" class="font-semibold hover:underline">{{ post.auteur.display_name }}</a>
+          <p class="text-xs text-muted">{{ post.date_creation|date:"j F Y à H:i" }} · {{ post.get_visibilite_display }}</p>
+        </div>
+        {% if is_author %}
+        <div class="relative" data-dropdown>
+          <button type="button" class="btn-ghost btn-sm !p-2" data-dropdown-toggle aria-label="Options">{% icon 'more' 'w-5 h-5' %}</button>
+          <div class="hidden absolute right-0 mt-2 w-56 card p-2 text-sm z-20" data-dropdown-menu>
+            <a href="{% url 'posts:update' post.pk %}" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2">{% icon 'edit' 'w-4 h-4' %} Modifier</a>
+            <a href="{% url 'faces:post_tags' post.pk %}" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2">{% icon 'scan-face' 'w-4 h-4' %} Taguer des amis</a>
+            <a href="{% url 'aistudio:generate' post.pk %}" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2">{% icon 'wand' 'w-4 h-4' %} Filtre / image IA</a>
+            <a href="{% url 'posts:delete' post.pk %}" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2 text-salmon">{% icon 'trash' 'w-4 h-4' %} Supprimer</a>
+          </div>
+        </div>
+        {% elif user.is_authenticated %}
+          <a href="{% url 'posts:report' post.pk %}" class="btn-ghost btn-sm !p-2" title="Signaler" aria-label="Signaler">{% icon 'flag' 'w-4 h-4' %}</a>
+        {% endif %}
+      </header>
+
+      {% if post.caption %}<p class="leading-relaxed">{{ post.caption|hashtagify }}</p>{% endif %}
+      {% if post.caption_is_ai %}<span class="badge badge-peri">{% icon 'sparkles' 'w-3 h-3 mr-1' %} Légende générée par l'IA{% if post.caption_style %} · {{ post.get_caption_style_display }}{% endif %}</span>{% endif %}
+      {% if post.hashtags_ia %}<p class="text-sm">{{ post.hashtags_ia|hashtagify }}</p>{% endif %}
+
+      {% if tagged_users %}
+        <p class="text-sm text-muted flex items-center gap-1 flex-wrap">{% icon 'user-check' 'w-4 h-4 text-maya' %} avec
+          {% for u in tagged_users %}<a href="{{ u.get_absolute_url }}" class="text-alice hover:underline">{{ u.display_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+      {% endif %}
+
+      {% if is_author %}
+        {% if pending_tags %}
+          <a href="{% url 'faces:post_tags' post.pk %}" class="flex items-center gap-3 rounded-2xl bg-maya/10 border border-maya/30 p-3 text-sm hover:bg-maya/15">
+            <span class="grid place-items-center w-9 h-9 rounded-full bg-maya text-midnight">{% icon 'scan-face' 'w-4 h-4' %}</span>
+            <span class="flex-1">{{ pending_tags }} ami{{ pending_tags|pluralize }} reconnu{{ pending_tags|pluralize }} — confirme les tags</span>
+            <span class="text-maya">→</span>
+          </a>
+        {% elif faces_analyzing %}
+          <p class="text-xs text-muted flex items-center gap-2" data-reload-after="5000">{% icon 'scan-face' 'w-4 h-4 text-maya animate-pulse' %} Analyse des visages en cours…</p>
+        {% endif %}
+      {% endif %}
+
+      {% for ap in audio_posts %}
+        {% include "partials/audio_player.html" with audio=ap.fichier_audio duree=ap.duree seed=ap.pk transcription=ap.transcription %}
+        {% if ap.user == user and ap.transcription %}
+          <div class="flex gap-3 text-xs -mt-1">
+            <a href="{% url 'audio:transcription_update' ap.transcription.pk %}" class="link">Corriger la transcription</a>
+            <form method="post" action="{% url 'audio:retranscribe' 'post' ap.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="link">Re-transcrire</button></form>
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      {# Réactions #}
+      <div class="flex items-center gap-2 pt-2 flex-wrap" data-reaction-bar>
+        {% for value, emoji in reaction_types %}
+          {% if user.is_authenticated %}
+          <form method="post" action="{% url 'posts:react' post.pk %}" data-react-form>{% csrf_token %}
+            <input type="hidden" name="type" value="{{ value }}">
+            <button class="chip !text-base hover:border-maya {% if my_reaction.type == value %}chip-active{% endif %}" data-reaction-type="{{ value }}" data-react-button title="{{ value }}">{{ emoji }} <span class="text-xs" data-type-count="{{ value }}">{{ reaction_counts|get_item:value }}</span></button>
+          </form>
+          {% else %}
+            <span class="chip !text-base">{{ emoji }} <span class="text-xs">{{ reaction_counts|get_item:value }}</span></span>
+          {% endif %}
+        {% endfor %}
+        <span class="ml-auto text-sm text-muted"><span data-react-count>{{ post.nb_reactions }}</span> réaction{{ post.nb_reactions|pluralize }}</span>
+      </div>
+    </section>
+
+    {# Commentaires (texte + vocaux) #}
+    <section class="card p-5" id="commentaires">
+      <h2 class="section-title mb-4">Commentaires <span class="text-muted text-sm font-normal">({{ thread|length }})</span></h2>
+      <div class="space-y-4">
+        {% for c in thread %}
+          <div class="flex gap-3">
+            <a href="{{ c.user.get_absolute_url }}">{% avatar c.user 'sm' %}</a>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <a href="{{ c.user.get_absolute_url }}" class="font-medium text-sm hover:underline">{{ c.user.display_name }}</a>
+                <span class="text-xs text-muted">{{ c.date|short_since }}</span>
+                {% if c.user == user or is_author %}
+                  <span class="ml-auto flex gap-1">
+                    {% if c.kind == 'texte' and c.user == user %}<a href="{% url 'posts:comment_update' c.pk %}" class="text-muted hover:text-alice" aria-label="Modifier">{% icon 'edit' 'w-3.5 h-3.5' %}</a>{% endif %}
+                    <a href="{% if c.kind == 'texte' %}{% url 'posts:comment_delete' c.pk %}{% else %}{% url 'audio:comment_delete' c.pk %}{% endif %}" class="text-muted hover:text-salmon" aria-label="Supprimer">{% icon 'trash' 'w-3.5 h-3.5' %}</a>
+                  </span>
+                {% endif %}
+              </div>
+              {% if c.kind == 'texte' %}
+                <p class="mt-1 rounded-2xl bg-surface2 px-4 py-2.5 text-sm inline-block max-w-full break-words">{{ c.contenu|hashtagify }}</p>
+              {% else %}
+                <div class="mt-1">{% include "partials/audio_player.html" with audio=c.fichier_audio duree=c.duree seed=c.pk transcription=c.transcription compact=True %}</div>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-sm text-muted">Sois le premier à commenter ✨</p>
+        {% endfor %}
+      </div>
+
+      {% if user.is_authenticated %}
+      <div class="mt-5 space-y-3">
+        <form method="post" action="{% url 'posts:comment' post.pk %}" class="flex items-center gap-2">{% csrf_token %}
+          {{ comment_form.contenu }}
+          <button class="btn-primary !px-4 !py-3 !rounded-full" aria-label="Envoyer">{% icon 'send' 'w-4 h-4' %}</button>
+        </form>
+        <form method="post" action="{% url 'audio:comment_create' post.pk %}" enctype="multipart/form-data" id="vocal" data-voice-comment-form>{% csrf_token %}
+          <input type="file" name="fichier_audio" class="hidden" data-recorder-input>
+          <input type="hidden" name="duree" data-recorder-duration>
+          {% include "partials/recorder.html" with label="Laisse un commentaire vocal" %}
+          <button class="hidden btn-danger btn-sm w-full mt-2" data-voice-send>{% icon 'send' 'w-4 h-4' %} Envoyer le vocal</button>
+        </form>
+      </div>
+      {% else %}
+        <p class="mt-4 text-sm text-muted"><a class="link" href="{% url 'accounts:login' %}?next={{ request.path }}">Connecte-toi</a> pour commenter.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Modifier la publication{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <a href="{{ object.get_absolute_url }}" class="btn-ghost btn-sm !p-2" aria-label="Retour">{% icon 'arrow-left' 'w-5 h-5' %}</a>
+  <h1 class="text-2xl">Modifier la publication</h1>
+</div>
+<form method="post" class="space-y-5">{% csrf_token %}
+  <img src="{{ object.image.url }}" class="w-full max-h-80 object-cover rounded-3xl" alt="">
+  {% include "partials/form_field.html" with field=form.caption %}
+
+  <section class="card p-4 space-y-3" data-ai-panel data-url="{% url 'ai_caption' %}" data-post-id="{{ object.pk }}">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-sm text-muted mr-1">Régénérer avec l'IA :</span>
+      <button type="button" class="chip {% if object.caption_style != 'marketing' and object.caption_style != 'humoristique' %}chip-active{% endif %}" data-style="poetique">Poétique</button>
+      <button type="button" class="chip {% if object.caption_style == 'marketing' %}chip-active{% endif %}" data-style="marketing">Marketing</button>
+      <button type="button" class="chip {% if object.caption_style == 'humoristique' %}chip-active{% endif %}" data-style="humoristique">Humoristique</button>
+      <button type="button" class="btn-ai btn-sm ml-auto" data-ai-generate>{% icon 'sparkles' 'w-4 h-4' %} Générer</button>
+    </div>
+    <div class="hidden space-y-2" data-ai-loading><div class="skeleton h-4 w-5/6"></div><div class="skeleton h-4 w-1/2"></div></div>
+    <div class="hidden space-y-3" data-ai-result>
+      <p class="rounded-2xl bg-surface2 p-3" data-ai-caption></p>
+      <div class="flex flex-wrap gap-2" data-ai-tags></div>
+      <div class="flex items-center gap-2">
+        <button type="button" class="btn-outline btn-sm" data-ai-use>Utiliser la légende</button>
+        <span class="ml-auto text-xs text-muted">Moteur : <span data-ai-engine></span></span>
+      </div>
+    </div>
+  </section>
+
+  {% include "partials/form_field.html" with field=form.hashtags_ia %}
+  {% include "partials/form_field.html" with field=form.visibilite %}
+  <div class="flex gap-3">
+    <button class="btn-primary">Enregistrer</button>
+    <a href="{{ object.get_absolute_url }}" class="btn-outline">Annuler</a>
+  </div>
+</form>
+{% endblock %}

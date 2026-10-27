@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Vocal de {{ audio_post.user.display_name }}{% endblock %}
+{% block content %}
+<a href="{% url 'audio:list' %}" class="btn-ghost btn-sm mb-4 -ml-2">{% icon 'arrow-left' 'w-4 h-4' %} Vocaux</a>
+<article class="card p-5 space-y-4">
+  <header class="flex items-center gap-3">
+    {% avatar audio_post.user 'md' %}
+    <div class="flex-1">
+      <a href="{{ audio_post.user.get_absolute_url }}" class="font-semibold hover:underline">{{ audio_post.user.display_name }}</a>
+      <p class="text-xs text-muted">{{ audio_post.date|date:"j F Y à H:i" }}</p>
+    </div>
+  </header>
+  {% if audio_post.description %}<p>{{ audio_post.description|hashtagify }}</p>{% endif %}
+  {% if audio_post.post %}
+    <a href="{{ audio_post.post.get_absolute_url }}" class="flex items-center gap-3 rounded-2xl bg-surface2 p-2 hover:bg-line">
+      <img src="{{ audio_post.post.image.url }}" class="w-14 h-14 rounded-xl object-cover" alt=""><span class="text-sm">Voir la photo associée →</span>
+    </a>
+  {% endif %}
+  {% include "partials/audio_player.html" with audio=audio_post.fichier_audio duree=audio_post.duree seed=audio_post.pk transcription=audio_post.transcription %}
+
+  {% with t=audio_post.transcription %}
+  {% if t %}
+  <dl class="grid grid-cols-3 gap-3 text-sm">
+    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Statut</dt><dd>{{ t.get_statut_display }}</dd></div>
+    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Langue</dt><dd>{{ t.langue|upper|default:"—" }}</dd></div>
+    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Moteur</dt><dd>{{ t.moteur|default:"—" }}</dd></div>
+  </dl>
+  {% if t.erreur and audio_post.user == user %}<p class="text-xs text-salmon">{{ t.erreur }}</p>{% endif %}
+  {% endif %}
+  {% if audio_post.user == user %}
+  <div class="flex flex-wrap gap-2 pt-2">
+    {% if t %}<a href="{% url 'audio:transcription_update' t.pk %}" class="btn-outline btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier le texte</a>{% endif %}
+    <form method="post" action="{% url 'audio:retranscribe' 'post' audio_post.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-ai btn-sm">{% icon 'refresh' 'w-4 h-4' %} Re-transcrire</button></form>
+    <a href="{% url 'audio:delete' audio_post.pk %}" class="btn-ghost btn-sm text-salmon">{% icon 'trash' 'w-4 h-4' %} Supprimer</a>
+  </div>
+  {% endif %}
+  {% endwith %}
+</article>
+{% endblock %}

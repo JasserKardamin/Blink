@@ -1,0 +1,8 @@
+{% if field.is_hidden %}{{ field }}{% else %}
+<div class="space-y-1.5">
+  {% if field.label %}<label for="{{ field.id_for_label }}" class="block">{{ field.label }}{% if field.field.required %} <span class="text-salmon">*</span>{% endif %}</label>{% endif %}
+  {{ field }}
+  {% if field.help_text %}<p class="text-xs text-muted/80">{{ field.help_text|safe }}</p>{% endif %}
+  {{ field.errors }}
+</div>
+{% endif %}

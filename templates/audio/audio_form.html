@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Nouveau vocal{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <a href="{% url 'audio:list' %}" class="btn-ghost btn-sm !p-2" aria-label="Retour">{% icon 'arrow-left' 'w-5 h-5' %}</a>
+  <h1 class="text-2xl">Nouveau vocal</h1>
+</div>
+<form method="post" enctype="multipart/form-data" class="card-pad space-y-5" novalidate>{% csrf_token %}
+  {{ form.non_field_errors }}
+  {{ form.fichier_audio }}{{ form.duree }}
+  <div>
+    <p class="text-sm text-muted mb-2">Message vocal <span class="text-salmon">*</span></p>
+    {% include "partials/recorder.html" with allow_upload=True %}
+    {{ form.fichier_audio.errors }}
+  </div>
+  {% include "partials/form_field.html" with field=form.description %}
+  <p class="text-xs text-muted flex items-center gap-2">{% icon 'sparkles' 'w-4 h-4 text-peri' %} Ton vocal sera transcrit en texte (Whisper / Gemini) et la langue détectée automatiquement.</p>
+  <button class="btn-primary w-full">{% icon 'send' 'w-4 h-4' %} Publier le vocal</button>
+</form>
+{% endblock %}

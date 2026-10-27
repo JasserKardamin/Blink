@@ -1,0 +1,85 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .blink-dash { margin: 0 0 24px; }
+  .blink-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .blink-card { background: var(--darkened-bg); border: 1px solid var(--hairline-color); border-radius: 14px; padding: 16px; }
+  .blink-card h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--body-quiet-color); background: none; padding: 0; }
+  .blink-num { font-size: 30px; font-weight: 700; color: var(--body-fg); line-height: 1.1; }
+  .blink-sub { font-size: 12px; color: var(--body-quiet-color); margin-top: 4px; }
+  .blink-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 1000px) { .blink-row { grid-template-columns: 1fr; } }
+  .blink-bars { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-top: 8px; }
+  .blink-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; font-size: 10px; color: var(--body-quiet-color); }
+  .blink-bar span.fill { width: 100%; border-radius: 6px 6px 2px 2px; background: #66C5FF; min-height: 2px; }
+  .blink-ai { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; font-size: 13px; }
+  .blink-ai b { color: #8B7BFF; }
+  .blink-reports td, .blink-reports th { padding: 6px 8px; }
+  .blink-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: rgba(255,122,107,.15); color: #d9483b; }
+  .blink-title { display:flex; align-items:center; gap:10px; margin-bottom: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blink-dash">
+  <div class="blink-title">
+    <svg viewBox="0 0 100 100" width="34" height="34"><path fill="#66C5FF" d="M20 14C34 10 52 6 64 6c6 0 9 3 12 7l16 29c3 5 2 10-2 14L66 82c-4 4-9 4-14 2l-12-5c-8 7-18 15-28 16-4 0-5-3-2-7l12-14c-8-1-14-6-14-14l1-34c0-7 4-10 11-12Z"/><rect x="31" y="33" width="12" height="22" rx="5" fill="#fff"/><rect x="53" y="33" width="12" height="22" rx="5" fill="#fff"/></svg>
+    <h2 style="margin:0">Tableau de bord Blink</h2>
+  </div>
+
+  <div class="blink-kpis">
+    {% for label, value, sub in stats.kpis %}
+      <div class="blink-card"><h3>{{ label }}</h3><div class="blink-num">{{ value }}</div><div class="blink-sub">{{ sub }}</div></div>
+    {% endfor %}
+  </div>
+
+  <div class="blink-row">
+    <div class="blink-card">
+      <h3>Publications — 14 derniers jours</h3>
+      <div class="blink-bars">
+        {% for s in stats.series %}
+          <div class="blink-bar" title="{{ s.day|date:'j M' }} : {{ s.count }}">
+            <span>{{ s.count|default:"" }}</span>
+            <span class="fill" style="height: {{ s.pct }}%"></span>
+            <span>{{ s.day|date:"d" }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="blink-card">
+      <h3>Intelligence artificielle</h3>
+      <div class="blink-ai">
+        {% for label, value in stats.ai %}<span>{{ label }}</span><b>{{ value }}</b>{% endfor %}
+      </div>
+      {% if stats.ai_by_engine %}
+      <h3 style="margin-top:14px">Moteurs utilisés</h3>
+      <div class="blink-ai">{% for e in stats.ai_by_engine %}<span>{{ e.moteur|default:"—" }}</span><b>{{ e.n }}</b>{% endfor %}</div>
+      {% endif %}
+      {% if stats.transcription_errors %}<p class="blink-sub" style="margin-top:10px"><span class="blink-pill">{{ stats.transcription_errors }} transcription(s) en erreur</span></p>{% endif %}
+    </div>
+  </div>
+
+  <div class="blink-card">
+    <h3>Signalements à traiter {% if stats.pending_reports_count %}<span class="blink-pill">{{ stats.pending_reports_count }}</span>{% endif %}</h3>
+    {% if stats.pending_reports %}
+      <table class="blink-reports" style="width:100%">
+        <thead><tr><th>Publication</th><th>Motif</th><th>Signalé par</th><th>Date</th><th></th></tr></thead>
+        <tbody>
+        {% for r in stats.pending_reports %}
+          <tr>
+            <td><img src="{{ r.post.image.url }}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;vertical-align:middle"> {{ r.post.auteur }}</td>
+            <td>{{ r.get_motif_display }}</td><td>{{ r.auteur }}</td><td>{{ r.date|date:"j M H:i" }}</td>
+            <td><a href="{% url 'admin:core_report_change' r.pk %}">Traiter →</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p style="margin-top:8px"><a href="{% url 'admin:core_report_changelist' %}?traite__exact=0">Tous les signalements →</a></p>
+    {% else %}
+      <p class="blink-sub">Aucun signalement en attente 🎉</p>
+    {% endif %}
+  </div>
+</div>
+{{ block.super }}
+{% endblock %}

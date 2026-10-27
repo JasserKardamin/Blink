@@ -1,0 +1,7 @@
+<span class="relative inline-block shrink-0 {{ size_cls }} {% if ring %}p-[2px] rounded-full ring-gradient{% endif %}">
+  {% if u.display_avatar_url %}
+    <img src="{{ u.display_avatar_url }}" alt="{{ u.username }}" class="w-full h-full rounded-full object-cover {% if ring %}border-2 border-midnight{% endif %}" loading="lazy">
+  {% else %}
+    <span class="w-full h-full rounded-full grid place-items-center font-display font-semibold text-midnight {% if ring %}border-2 border-midnight{% endif %}" style="background: {{ u.avatar_color }}">{{ u.initial }}</span>
+  {% endif %}
+</span>

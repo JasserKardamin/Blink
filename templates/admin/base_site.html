@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+<style>
+  /* Charte Blink appliquée à l'administration */
+  :root, html[data-theme="light"] {
+    --primary: #13112A; --secondary: #262249; --accent: #66C5FF; --primary-fg: #F2F9FF;
+    --header-color: #66C5FF; --header-branding-color: #66C5FF; --header-bg: #13112A; --header-link-color: #F2F9FF;
+    --breadcrumbs-bg: #262249; --breadcrumbs-link-fg: #66C5FF; --breadcrumbs-fg: #A19DC4;
+    --link-fg: #4a5bd6; --link-hover-color: #8B7BFF; --link-selected-fg: #8B7BFF;
+    --button-bg: #8B7BFF; --button-hover-bg: #7465f0; --default-button-bg: #13112A; --default-button-hover-bg: #262249;
+    --selected-row: #eef6ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --link-fg: #66C5FF; --link-hover-color: #8B7BFF; --selected-row: #262249; }
+  }
+  html[data-theme="dark"] { --link-fg: #66C5FF; --link-hover-color: #8B7BFF; --selected-row: #262249; --body-bg: #13112A; --darkened-bg: #1C1938; }
+  #site-name { display: flex; align-items: center; gap: 10px; }
+  #site-name a { font-weight: 700; }
+</style>
+{% endblock %}
+{% block branding %}
+<div id="site-name">
+  <svg viewBox="0 0 100 100" width="30" height="30" aria-hidden="true"><path fill="#66C5FF" d="M20 14C34 10 52 6 64 6c6 0 9 3 12 7l16 29c3 5 2 10-2 14L66 82c-4 4-9 4-14 2l-12-5c-8 7-18 15-28 16-4 0-5-3-2-7l12-14c-8-1-14-6-14-14l1-34c0-7 4-10 11-12Z"/><rect x="31" y="33" width="12" height="22" rx="5" fill="#fff"/><rect x="53" y="33" width="12" height="22" rx="5" fill="#fff"/></svg>
+  <a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a>
+</div>
+{% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
+{% endblock %}
+{% block nav-global %}{% endblock %}

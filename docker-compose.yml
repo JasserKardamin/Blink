@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: blink
+      POSTGRES_USER: blink
+      POSTGRES_PASSWORD: blink
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blink"]
+      interval: 3s
+      retries: 20
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://blink:blink@db:5432/blink
+      DEBUG: "0"
+      SECRET_KEY: ${SECRET_KEY:-remplace-moi-par-une-longue-cle-secrete}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      HF_TOKEN: ${HF_TOKEN:-}
+      SEED_DEMO: ${SEED_DEMO:-1}
+    volumes:
+      - blinkdata:/data
+
+volumes:
+  pgdata:
+  blinkdata:

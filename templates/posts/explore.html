@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Explorer{% endblock %}
+{% block container %}max-w-4xl{% endblock %}
+{% block content %}
+<div class="flex items-end justify-between mb-5">
+  <div>
+    <h1 class="text-2xl">Explorer</h1>
+    <p class="text-sm text-muted">Les dernières publications que tu peux voir — sans algorithme, simplement par date.</p>
+  </div>
+</div>
+{% include "partials/post_grid.html" %}
+{% include "partials/pagination.html" %}
+{% endblock %}

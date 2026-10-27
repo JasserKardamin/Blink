@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Vocaux{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl">Vocaux</h1>
+    <p class="text-sm text-muted">Messages vocaux transcrits automatiquement pour l'accessibilité.</p>
+  </div>
+  <a href="{% url 'audio:create' %}" class="btn-danger btn-sm">{% icon 'mic' 'w-4 h-4' %} Nouveau vocal</a>
+</div>
+<div class="flex gap-2 mb-5">
+  <a href="{% url 'audio:list' %}" class="chip {% if request.GET.filtre != 'moi' %}chip-active{% endif %}">Tous</a>
+  <a href="?filtre=moi" class="chip {% if request.GET.filtre == 'moi' %}chip-active{% endif %}">Mes vocaux</a>
+</div>
+<div class="space-y-4">
+  {% for ap in audio_posts %}
+    <article class="card p-4 space-y-3">
+      <header class="flex items-center gap-3">
+        {% avatar ap.user 'sm' %}
+        <div class="flex-1 min-w-0">
+          <a href="{{ ap.user.get_absolute_url }}" class="font-medium text-sm hover:underline">{{ ap.user.display_name }}</a>
+          <p class="text-xs text-muted">{{ ap.date|short_since }}{% if ap.post %} · <a href="{{ ap.post.get_absolute_url }}" class="link">sur une photo</a>{% endif %}</p>
+        </div>
+        <a href="{{ ap.get_absolute_url }}" class="btn-ghost btn-sm !p-2" aria-label="Détails">{% icon 'more' 'w-4 h-4' %}</a>
+      </header>
+      {% if ap.description %}<p class="text-sm">{{ ap.description|hashtagify }}</p>{% endif %}
+      {% include "partials/audio_player.html" with audio=ap.fichier_audio duree=ap.duree seed=ap.pk transcription=ap.transcription %}
+    </article>
+  {% empty %}
+    <div class="card-pad text-center py-12">
+      <span class="mx-auto grid place-items-center w-14 h-14 rounded-full bg-salmon text-midnight mb-4">{% icon 'mic' 'w-6 h-6' %}</span>
+      <p class="text-muted">Aucun vocal pour le moment.</p>
+    </div>
+  {% endfor %}
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

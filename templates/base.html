@@ -1,0 +1,97 @@
+{% load static blink_tags %}<!doctype html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#13112A">
+  <title>{% block title %}Blink{% endblock %} · Blink</title>
+  <meta name="description" content="Blink — Poste. Parle. L'IA fait le reste.">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-full" data-authenticated="{{ user.is_authenticated|yesno:'1,0' }}">
+  <header class="sticky top-0 z-30 bg-midnight/85 backdrop-blur border-b border-line/50">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center gap-4">
+      <a href="{% url 'core:home' %}" class="flex items-center gap-2 shrink-0" aria-label="Accueil Blink">
+        {% include "partials/logo.html" with cls="w-9 h-9" %}
+        <span class="font-display text-2xl font-bold text-maya tracking-tight">Blink</span>
+      </a>
+      {% if user.is_authenticated %}
+      <nav class="hidden md:flex items-center gap-1 ml-4 text-sm whitespace-nowrap">
+        {% url 'core:home' as home_url %}{% url 'posts:explore' as explore_url %}{% url 'audio:list' as audio_url %}{% url 'aistudio:studio' as studio_url %}{% url 'accounts:friends' as friends_url %}
+        <a href="{{ home_url }}" class="btn-ghost btn-sm {% if request.path == home_url %}text-alice bg-surface2{% endif %}">{% icon 'home' 'w-4 h-4' %} Fil</a>
+        <a href="{{ explore_url }}" class="btn-ghost btn-sm {% if request.path == explore_url %}text-alice bg-surface2{% endif %}">{% icon 'grid' 'w-4 h-4' %} Explorer</a>
+        <a href="{{ audio_url }}" class="btn-ghost btn-sm {% if audio_url in request.path %}text-alice bg-surface2{% endif %}">{% icon 'audio' 'w-4 h-4' %} Vocaux</a>
+        <a href="{{ studio_url }}" class="btn-ghost btn-sm {% if studio_url in request.path %}text-alice bg-surface2{% endif %}">{% icon 'wand' 'w-4 h-4' %} Studio IA</a>
+        <a href="{{ friends_url }}" class="btn-ghost btn-sm relative {% if request.path == friends_url %}text-alice bg-surface2{% endif %}">{% icon 'users' 'w-4 h-4' %} Amis
+          {% if pending_friend_requests %}<span class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-salmon text-[10px] text-midnight font-bold grid place-items-center">{{ pending_friend_requests }}</span>{% endif %}
+        </a>
+      </nav>
+      {% endif %}
+      <div class="ml-auto flex items-center gap-2">
+        {% if user.is_authenticated %}
+          <form action="{% url 'core:search' %}" class="hidden lg:block">
+            <input type="search" name="q" placeholder="Rechercher…" class="!py-2 !rounded-full !w-48 text-sm" value="{{ request.GET.q|default:'' }}">
+          </form>
+          <a href="{% url 'posts:create' %}" class="hidden md:inline-flex btn-primary btn-sm">{% icon 'plus' 'w-4 h-4' %} Publier</a>
+          <div class="relative" data-dropdown>
+            <button type="button" class="flex items-center rounded-full" data-dropdown-toggle aria-label="Menu du compte">{% avatar user 'sm' %}</button>
+            <div class="hidden absolute right-0 mt-2 w-60 card p-2 text-sm" data-dropdown-menu>
+              <div class="px-3 py-2 border-b border-line/60 mb-1">
+                <p class="font-semibold">{{ user.display_name }}</p><p class="text-muted text-xs">@{{ user.username }}</p>
+              </div>
+              <a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2" href="{{ user.get_absolute_url }}">{% icon 'user' 'w-4 h-4' %} Mon profil</a>
+              <a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2" href="{% url 'accounts:edit' %}">{% icon 'settings' 'w-4 h-4' %} Modifier le profil</a>
+              <a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2" href="{% url 'faces:my_tags' %}">{% icon 'scan-face' 'w-4 h-4' %} Identifications & visage</a>
+              <a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2 md:hidden" href="{% url 'aistudio:studio' %}">{% icon 'wand' 'w-4 h-4' %} Studio IA</a>
+              <a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2 md:hidden" href="{% url 'audio:list' %}">{% icon 'audio' 'w-4 h-4' %} Vocaux</a>
+              <a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2 md:hidden" href="{% url 'accounts:friends' %}">{% icon 'users' 'w-4 h-4' %} Amis</a>
+              {% if user.is_staff %}<a class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2 text-peri" href="{% url 'admin:index' %}">{% icon 'shield' 'w-4 h-4' %} Administration</a>{% endif %}
+              <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+                <button class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-surface2 text-salmon">{% icon 'logout' 'w-4 h-4' %} Se déconnecter</button>
+              </form>
+            </div>
+          </div>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="btn-ghost btn-sm">Se connecter</a>
+          <a href="{% url 'accounts:signup' %}" class="btn-primary btn-sm">Créer un compte</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <div id="toasts" class="fixed top-20 inset-x-0 z-50 flex flex-col items-center gap-2 px-4 pointer-events-none" aria-live="polite">
+    {% for message in messages %}
+      {% include "partials/toast.html" %}
+    {% endfor %}
+  </div>
+
+  <main class="{% block container %}max-w-2xl{% endblock %} mx-auto px-4 pt-6 {% if user.is_authenticated %}pb-32{% else %}pb-16{% endif %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if user.is_authenticated %}
+  <nav class="fixed bottom-4 inset-x-0 z-40 px-4 {% block hide_bottom_nav %}{% endblock %}" aria-label="Navigation principale">
+    <div class="mx-auto max-w-md flex items-center justify-between rounded-full bg-surface/95 backdrop-blur border border-line px-6 py-2 shadow-card">
+      {% url 'core:home' as home_url %}{% url 'core:search' as search_url %}{% url 'core:notifications' as notif_url %}
+      <a href="{{ home_url }}" class="p-2 {% if request.path == home_url %}text-maya{% else %}text-muted hover:text-alice{% endif %}" aria-label="Accueil">{% icon 'home' 'w-7 h-7' %}</a>
+      <a href="{{ search_url }}" class="p-2 {% if request.path == search_url %}text-maya{% else %}text-muted hover:text-alice{% endif %}" aria-label="Rechercher">{% icon 'search' 'w-7 h-7' %}</a>
+      <a href="{% url 'posts:create' %}" class="grid place-items-center w-14 h-14 -my-1 rounded-full bg-maya text-midnight shadow-lg hover:brightness-110 transition" aria-label="Nouveau post">{% icon 'plus' 'w-7 h-7' '2.5' %}</a>
+      <a href="{{ notif_url }}" class="relative p-2 {% if request.path == notif_url %}text-maya{% else %}text-muted hover:text-alice{% endif %}" aria-label="Notifications">
+        {% icon 'bell' 'w-7 h-7' %}
+        {% if unread_notifications %}<span class="absolute top-1 right-1 min-w-5 h-5 px-1 rounded-full bg-salmon text-[11px] text-midnight font-bold grid place-items-center" data-unread-badge>{{ unread_notifications }}</span>{% endif %}
+      </a>
+      <a href="{{ user.get_absolute_url }}" class="p-2 {% if request.path == user.get_absolute_url %}text-maya{% else %}text-muted hover:text-alice{% endif %}" aria-label="Profil">{% icon 'user' 'w-7 h-7' %}</a>
+    </div>
+  </nav>
+  {% endif %}
+
+  <template id="toast-template">{% include "partials/toast.html" with message=None %}</template>
+  <script src="{% static 'js/blink.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

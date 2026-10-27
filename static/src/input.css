@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-midnight text-alice font-sans antialiased; }
+  h1, h2, h3, h4 { @apply font-display font-semibold tracking-tight; }
+  ::selection { background: rgba(139, 123, 255, .45); }
+
+  input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="date"],
+  input[type="number"], input[type="url"], select, textarea {
+    @apply w-full rounded-2xl bg-surface2 border border-line px-4 py-3 text-alice placeholder:text-muted/70
+           outline-none transition focus:border-maya focus:shadow-glow;
+  }
+  input[type="range"] { @apply w-full accent-maya; }
+  input[type="checkbox"] { @apply accent-maya w-4 h-4; }
+  input[type="file"]:not(.hidden) { @apply block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-surface2 file:px-4 file:py-2 file:text-alice hover:file:bg-line; }
+  select { @apply appearance-none bg-no-repeat pr-10; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23A19DC4' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-position: right 1rem center; }
+  label { @apply text-sm text-muted; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-sm { @apply px-3 py-2 text-sm rounded-xl; }
+  .btn-primary { @apply btn bg-maya text-midnight hover:brightness-110; }
+  .btn-ai { @apply btn bg-peri text-white hover:brightness-110; }
+  .btn-danger { @apply btn bg-salmon text-midnight hover:brightness-110; }
+  .btn-outline { @apply btn border border-maya/70 text-maya hover:bg-maya/10; }
+  .btn-ghost { @apply btn text-muted hover:text-alice hover:bg-surface2; }
+  .btn-mic { @apply inline-grid place-items-center w-12 h-12 rounded-full bg-salmon text-midnight shadow-lg transition hover:brightness-110 active:scale-95; }
+
+  .card { @apply rounded-3xl bg-surface border border-line/70 shadow-card; }
+  .card-pad { @apply card p-5; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full bg-surface2 px-3 py-1 text-sm text-maya border border-line/60; }
+  .chip-active { @apply bg-peri text-white border-peri; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .badge-maya { @apply bg-maya/15 text-maya; }
+  .badge-peri { @apply bg-peri/20 text-peri; }
+  .badge-salmon { @apply bg-salmon/15 text-salmon; }
+  .badge-green { @apply bg-emerald-400/15 text-emerald-300; }
+  .badge-muted { @apply bg-surface2 text-muted; }
+  .section-title { @apply font-display text-lg font-semibold; }
+  .link { @apply text-maya hover:underline; }
+
+  .errorlist { @apply mt-1 text-sm text-salmon; }
+
+  .wave-bar { @apply w-[3px] rounded-full bg-maya/40 transition-colors; }
+  .wave-bar.played { @apply bg-maya; }
+  .rec-live .wave-bar { animation: wave 900ms ease-in-out infinite; @apply bg-salmon; }
+
+  .toast { @apply flex items-center gap-3 rounded-2xl bg-surface2/95 backdrop-blur border border-line px-4 py-3 shadow-card; animation: toast-in .25s ease-out; }
+  .skeleton { @apply rounded-xl bg-surface2; animation: pulse 1.4s ease-in-out infinite; }
+}
+
+@keyframes wave { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+.pop { animation: pop .35s ease-out; }
+.ring-gradient { background: conic-gradient(from 180deg, #66C5FF, #8B7BFF, #FF7A6B, #66C5FF); }
+.logo-gradient { background: radial-gradient(circle at 70% 20%, #FF7A6B 0%, transparent 40%), radial-gradient(circle at 20% 80%, #3B9CFF 0%, transparent 50%), linear-gradient(135deg, #66C5FF, #8B7BFF); }
+.is-liked { color: #FF7A6B !important; }
+.is-liked svg path { fill: #FF7A6B; }

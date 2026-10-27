@@ -1,0 +1,58 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Amis{% endblock %}
+{% block content %}
+<h1 class="text-2xl mb-6">Amis</h1>
+
+{% if received %}
+<section class="card-pad mb-6">
+  <h2 class="section-title mb-2">Demandes reçues <span class="badge badge-salmon ml-1">{{ received|length }}</span></h2>
+  {% for fr in received %}
+    <div class="flex items-center gap-3 py-2">
+      <a href="{{ fr.user_from.get_absolute_url }}">{% avatar fr.user_from 'md' %}</a>
+      <div class="flex-1 min-w-0"><a href="{{ fr.user_from.get_absolute_url }}" class="font-medium hover:underline">{{ fr.user_from.display_name }}</a><p class="text-xs text-muted">{{ fr.date|short_since }}</p></div>
+      <form method="post" action="{% url 'accounts:friend_respond' fr.pk 'accepter' %}">{% csrf_token %}<button class="btn-primary btn-sm">Accepter</button></form>
+      <form method="post" action="{% url 'accounts:friend_respond' fr.pk 'refuser' %}">{% csrf_token %}<button class="btn-ghost btn-sm">Refuser</button></form>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card-pad mb-6">
+  <h2 class="section-title mb-2">Mes amis <span class="text-muted text-sm font-normal">({{ friends|length }})</span></h2>
+  {% for u in friends %}
+    <div class="flex items-center gap-3 py-2">
+      <a href="{{ u.get_absolute_url }}">{% avatar u 'md' %}</a>
+      <div class="flex-1 min-w-0"><a href="{{ u.get_absolute_url }}" class="font-medium hover:underline">{{ u.display_name }}</a><p class="text-xs text-muted">@{{ u.username }}</p></div>
+      <form method="post" action="{% url 'accounts:friend_remove' u.username %}">{% csrf_token %}<button class="btn-ghost btn-sm" onclick="return confirm('Retirer {{ u.username|escapejs }} de tes amis ?')" aria-label="Retirer">{% icon 'user-minus' 'w-4 h-4' %}</button></form>
+    </div>
+  {% empty %}
+    <p class="text-muted text-sm py-4">Tu n'as pas encore d'amis sur Blink. Ajoute des personnes ci-dessous !</p>
+  {% endfor %}
+</section>
+
+{% if sent %}
+<section class="card-pad mb-6">
+  <h2 class="section-title mb-2">Demandes envoyées</h2>
+  {% for fr in sent %}
+    <div class="flex items-center gap-3 py-2">
+      {% avatar fr.user_to 'sm' %}
+      <a href="{{ fr.user_to.get_absolute_url }}" class="flex-1 hover:underline">{{ fr.user_to.display_name }}</a>
+      <form method="post" action="{% url 'accounts:friend_remove' fr.user_to.username %}">{% csrf_token %}<button class="btn-ghost btn-sm">Annuler</button></form>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if suggestions %}
+<section class="card-pad">
+  <h2 class="section-title mb-2">Personnes que tu pourrais connaître</h2>
+  {% for u in suggestions %}
+    <div class="flex items-center gap-3 py-2">
+      <a href="{{ u.get_absolute_url }}">{% avatar u 'md' %}</a>
+      <div class="flex-1 min-w-0"><a href="{{ u.get_absolute_url }}" class="font-medium hover:underline">{{ u.display_name }}</a><p class="text-xs text-muted">@{{ u.username }}</p></div>
+      <form method="post" action="{% url 'accounts:friend_request' u.username %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-outline btn-sm">{% icon 'user-plus' 'w-4 h-4' %} Ajouter</button></form>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

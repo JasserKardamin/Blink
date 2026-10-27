@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Filtres{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <a href="{% url 'aistudio:studio' %}" class="text-sm link">← Studio IA</a>
+    <h1 class="text-2xl mt-1">Filtres</h1>
+  </div>
+  <a href="{% url 'aistudio:filter_create' %}" class="btn-primary btn-sm">{% icon 'plus' 'w-4 h-4' %} Nouveau filtre</a>
+</div>
+
+<h2 class="section-title mb-3">Mes filtres</h2>
+<div class="space-y-3 mb-8">
+  {% for f in filters %}
+    <div class="card p-4 flex items-center gap-3">
+      {% if f.preview %}<img src="{{ f.preview.url }}" class="w-12 h-12 rounded-xl object-cover" alt="">{% else %}<span class="grid place-items-center w-12 h-12 rounded-xl bg-surface2 text-peri">{% icon 'palette' 'w-5 h-5' %}</span>{% endif %}
+      <div class="flex-1 min-w-0">
+        <p class="font-medium">{{ f.nom }}</p>
+        <p class="text-xs text-muted">Base : {{ f.parametres.base }} · intensité {{ f.parametres.intensite }} · saturation {{ f.parametres.saturation }} · contraste {{ f.parametres.contraste }}</p>
+      </div>
+      <a href="{% url 'aistudio:filter_update' f.pk %}" class="btn-ghost btn-sm !p-2" aria-label="Modifier">{% icon 'edit' 'w-4 h-4' %}</a>
+      <a href="{% url 'aistudio:filter_delete' f.pk %}" class="btn-ghost btn-sm !p-2 text-salmon" aria-label="Supprimer">{% icon 'trash' 'w-4 h-4' %}</a>
+    </div>
+  {% empty %}
+    <p class="card-pad text-center text-muted text-sm">Crée ton propre filtre à partir d'un style de base et règle intensité, saturation et contraste.</p>
+  {% endfor %}
+</div>
+
+<h2 class="section-title mb-3">Filtres Blink</h2>
+<div class="grid sm:grid-cols-2 gap-3">
+  {% for f in system_filters %}
+    <div class="card p-4"><p class="font-medium">{{ f.nom }}</p><p class="text-sm text-muted">{{ f.description }}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

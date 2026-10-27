@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Poste. Parle. L'IA fait le reste.{% endblock %}
+{% block container %}max-w-5xl{% endblock %}
+{% block content %}
+<section class="grid md:grid-cols-2 gap-10 items-center py-8 md:py-16">
+  <div>
+    <p class="badge badge-peri mb-5">{% icon 'sparkles' 'w-3 h-3 mr-1' %} Réseau social multimédia boosté à l'IA</p>
+    <h1 class="text-5xl md:text-6xl font-bold leading-[1.05]">Poste. Parle.<br><span class="text-maya">L'IA fait le reste.</span></h1>
+    <p class="mt-6 text-lg text-muted max-w-md">Le réseau social qui écrit tes légendes, trouve tes hashtags, transcrit tes vocaux et reconnaît tes amis.</p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="{% url 'accounts:signup' %}" class="btn-primary">Créer un compte</a>
+      <a href="{% url 'accounts:login' %}" class="btn-outline">Se connecter</a>
+    </div>
+  </div>
+  <div class="relative">
+    <div class="absolute -inset-6 rounded-[2.5rem] bg-peri/20 blur-3xl"></div>
+    <div class="relative card p-5">
+      <div class="flex gap-4 items-center">
+        <div class="w-28 h-28 rounded-2xl bg-maya relative overflow-hidden shrink-0">
+          <span class="absolute top-4 left-4 w-8 h-8 rounded-full bg-salmon"></span>
+          <svg viewBox="0 0 100 60" class="absolute bottom-0 w-full"><path d="M0 60 30 22l20 22 15-14 35 30Z" fill="#8B7BFF"/></svg>
+        </div>
+        <div class="space-y-2">
+          <p class="font-display text-lg">Coucher de soleil entre amis</p>
+          <span class="badge badge-peri">Légende générée par l'IA</span>
+          <p class="text-sm text-maya">#goldenhour #entreamis #blink</p>
+          <p class="flex items-center gap-2 text-xs text-muted"><span class="flex gap-[2px] items-center h-4">{% waveform 'landing' 8 as bars %}{% for h in bars %}<span class="w-[3px] rounded bg-salmon" style="height: {{ h }}%"></span>{% endfor %}</span> Message vocal transcrit</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="grid sm:grid-cols-3 gap-4 py-6">
+  <div class="card-pad"><span class="block w-3 h-3 rounded-full bg-peri mb-4"></span><h3>Légendes IA</h3><p class="text-sm text-muted mt-1">Texte poétique, marketing ou humoristique + hashtags générés par Gemini.</p></div>
+  <div class="card-pad"><span class="block w-3 h-3 rounded-full bg-salmon mb-4"></span><h3>Voix transcrite</h3><p class="text-sm text-muted mt-1">Posts et commentaires audio lisibles par tous grâce à Whisper.</p></div>
+  <div class="card-pad"><span class="block w-3 h-3 rounded-full bg-maya mb-4"></span><h3>Amis reconnus</h3><p class="text-sm text-muted mt-1">Les visages de tes amis sont détectés et tagués automatiquement.</p></div>
+</section>
+
+{% if posts %}
+<section class="py-8">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="section-title">Publications publiques</h2>
+    <a href="{% url 'posts:explore' %}" class="link text-sm">Tout voir →</a>
+  </div>
+  {% include "partials/post_grid.html" %}
+</section>
+{% endif %}
+{% endblock %}

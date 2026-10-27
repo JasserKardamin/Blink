@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Image IA{% endblock %}
+{% block container %}max-w-3xl{% endblock %}
+{% block content %}
+<a href="{% url 'aistudio:studio' %}" class="btn-ghost btn-sm mb-4 -ml-2">{% icon 'arrow-left' 'w-4 h-4' %} Studio IA</a>
+<div class="card p-5 space-y-5" {% if gen.statut == 'en_attente' %}data-poll-url="{% url 'generatedimage-detail' gen.pk %}"{% endif %}>
+  <h1 class="text-xl">Résultat IA <span class="badge badge-peri ml-2">{{ gen.get_type_display }}</span></h1>
+  <div class="grid grid-cols-2 gap-3">
+    <figure>
+      <img src="{{ gen.image_originale.url }}" class="w-full aspect-square object-cover rounded-2xl" alt="Original">
+      <figcaption class="text-center text-xs text-muted mt-2">Original</figcaption>
+    </figure>
+    <figure>
+      {% if gen.statut == 'termine' %}
+        <a href="{{ gen.image_generee.url }}" target="_blank"><img src="{{ gen.image_generee.url }}" class="w-full aspect-square object-cover rounded-2xl" alt="Version IA"></a>
+      {% elif gen.statut == 'erreur' %}
+        <div class="w-full aspect-square rounded-2xl bg-salmon/10 border border-salmon/40 grid place-items-center text-center p-4 text-sm text-salmon">La génération a échoué.<br>{{ gen.erreur }}</div>
+      {% else %}
+        <div class="w-full aspect-square rounded-2xl skeleton grid place-items-center"><span class="flex items-center gap-2 text-sm">{% icon 'sparkles' 'w-4 h-4 text-peri' %} Génération…</span></div>
+      {% endif %}
+      <figcaption class="text-center text-xs text-muted mt-2">Version IA · {{ gen.get_style_display }}</figcaption>
+    </figure>
+  </div>
+
+  <dl class="grid sm:grid-cols-2 gap-3 text-sm">
+    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Modèle</dt><dd>{{ gen.modele|default:"—" }}</dd></div>
+    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Filtre</dt><dd>{{ gen.filtre|default:gen.get_style_display }}</dd></div>
+    {% if gen.prompt %}<div class="rounded-2xl bg-surface2 p-3 sm:col-span-2"><dt class="text-xs text-muted">Prompt</dt><dd class="break-words">{{ gen.prompt }}</dd></div>{% endif %}
+  </dl>
+
+  <div class="flex flex-wrap gap-2">
+    {% if gen.statut == 'termine' %}
+      <form method="post" action="{% url 'aistudio:publish' gen.pk %}">{% csrf_token %}<button class="btn-primary btn-sm">{% icon 'send' 'w-4 h-4' %} Publier</button></form>
+      <form method="post" action="{% url 'aistudio:use_avatar' gen.pk %}">{% csrf_token %}<button class="btn-ai btn-sm">{% icon 'user' 'w-4 h-4' %} Utiliser comme avatar</button></form>
+      <a href="{{ gen.image_generee.url }}" download class="btn-outline btn-sm">Télécharger</a>
+    {% endif %}
+    {% if gen.post %}<a href="{% url 'aistudio:generate' gen.post.pk %}" class="btn-ghost btn-sm">{% icon 'refresh' 'w-4 h-4' %} Autre style</a>{% endif %}
+    <a href="{% url 'aistudio:delete' gen.pk %}" class="btn-ghost btn-sm text-salmon ml-auto">{% icon 'trash' 'w-4 h-4' %} Supprimer</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Signaler{% endblock %}
+{% block container %}max-w-md{% endblock %}
+{% block content %}
+<div class="card p-6">
+  <div class="flex items-center gap-3 mb-5">
+    <img src="{{ post.image.url }}" class="w-16 h-16 rounded-xl object-cover" alt="">
+    <div><h1 class="text-xl">Signaler la publication</h1><p class="text-sm text-muted">de {{ post.auteur.display_name }}</p></div>
+  </div>
+  <form method="post" class="space-y-4">{% csrf_token %}
+    {% include "partials/form_field.html" with field=form.motif %}
+    {% include "partials/form_field.html" with field=form.details %}
+    <div class="flex gap-3">
+      <button class="btn-danger">{% icon 'flag' 'w-4 h-4' %} Envoyer le signalement</button>
+      <a href="{{ post.get_absolute_url }}" class="btn-outline">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

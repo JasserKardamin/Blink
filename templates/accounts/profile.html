@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}{{ profile_user.display_name }}{% endblock %}
+{% block container %}max-w-3xl{% endblock %}
+{% block content %}
+<section class="card p-6 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center gap-5">
+    {% avatar profile_user 'xl' ring=True %}
+    <div class="flex-1 min-w-0">
+      <h1 class="text-2xl">{{ profile_user.display_name }}</h1>
+      <p class="text-muted">@{{ profile_user.username }}{% if profile_user.profile.ville %} · {{ profile_user.profile.ville }}{% endif %}</p>
+      {% if profile_user.bio %}<p class="mt-3 leading-relaxed">{{ profile_user.bio|hashtagify }}</p>{% endif %}
+      <div class="flex gap-6 mt-4 text-sm">
+        <span><b class="font-display text-lg">{{ posts|length }}</b> <span class="text-muted">publications</span></span>
+        <span><b class="font-display text-lg">{{ friends_count }}</b> <span class="text-muted">amis</span></span>
+        <span><b class="font-display text-lg">{{ followers_count }}</b> <span class="text-muted">abonnés</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2 mt-6">
+    {% if user == profile_user %}
+      <a href="{% url 'accounts:edit' %}" class="btn-outline btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier le profil</a>
+      <a href="{% url 'aistudio:avatar' %}" class="btn-ai btn-sm">{% icon 'sparkles' 'w-4 h-4' %} Avatar IA</a>
+      <a href="{% url 'faces:my_tags' %}" class="btn-ghost btn-sm">{% icon 'scan-face' 'w-4 h-4' %} Mes identifications</a>
+    {% elif user.is_authenticated %}
+      {% if not friendship %}
+        <form method="post" action="{% url 'accounts:friend_request' profile_user.username %}">{% csrf_token %}<button class="btn-primary btn-sm">{% icon 'user-plus' 'w-4 h-4' %} Ajouter en ami</button></form>
+      {% elif friendship.statut == 'accepte' %}
+        <form method="post" action="{% url 'accounts:friend_remove' profile_user.username %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-outline btn-sm" onclick="return confirm('Retirer cet ami ?')">{% icon 'user-check' 'w-4 h-4' %} Amis</button></form>
+      {% elif friendship.user_to == user and friendship.statut == 'en_attente' %}
+        <form method="post" action="{% url 'accounts:friend_respond' friendship.pk 'accepter' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-primary btn-sm">Accepter la demande</button></form>
+        <form method="post" action="{% url 'accounts:friend_respond' friendship.pk 'refuser' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-ghost btn-sm">Refuser</button></form>
+      {% elif friendship.user_from == user and friendship.statut == 'en_attente' %}
+        <form method="post" action="{% url 'accounts:friend_remove' profile_user.username %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-ghost btn-sm border border-line">Demande envoyée · Annuler</button></form>
+      {% else %}
+        <form method="post" action="{% url 'accounts:friend_request' profile_user.username %}">{% csrf_token %}<button class="btn-primary btn-sm">{% icon 'user-plus' 'w-4 h-4' %} Ajouter en ami</button></form>
+      {% endif %}
+      <form method="post" action="{% url 'accounts:follow' profile_user.username %}">{% csrf_token %}
+        <button class="{% if is_following %}btn-ghost border border-line{% else %}btn-outline{% endif %} btn-sm">{% if is_following %}Abonné(e) ✓{% else %}S'abonner{% endif %}</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+{% if audio_posts %}
+<section class="mb-6">
+  <h2 class="section-title mb-3 flex items-center gap-2">{% icon 'audio' 'w-5 h-5 text-salmon' %} Vocaux</h2>
+  <div class="grid sm:grid-cols-2 gap-3">
+    {% for ap in audio_posts %}
+      <div>
+        {% include "partials/audio_player.html" with audio=ap.fichier_audio duree=ap.duree seed=ap.pk transcription=ap.transcription compact=True %}
+        <a href="{{ ap.get_absolute_url }}" class="text-xs link ml-1">{{ ap.date|short_since }} · détails</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<h2 class="section-title mb-3">Publications</h2>
+{% include "partials/post_grid.html" with empty_text="Aucune publication visible." %}
+{% endblock %}

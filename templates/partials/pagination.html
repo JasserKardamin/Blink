@@ -1,0 +1,8 @@
+{% load blink_tags %}
+{% if is_paginated %}
+<nav class="flex items-center justify-center gap-2 py-6" aria-label="Pagination">
+  {% if page_obj.has_previous %}<a class="btn-ghost btn-sm" href="?{% url_replace page=page_obj.previous_page_number %}">← Précédent</a>{% endif %}
+  <span class="text-sm text-muted">Page {{ page_obj.number }} / {{ paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="btn-ghost btn-sm" href="?{% url_replace page=page_obj.next_page_number %}">Suivant →</a>{% endif %}
+</nav>
+{% endif %}

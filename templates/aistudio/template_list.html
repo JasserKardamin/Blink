@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Modèles de prompt{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <a href="{% url 'aistudio:studio' %}" class="text-sm link">← Studio IA</a>
+    <h1 class="text-2xl mt-1">Modèles de prompt</h1>
+  </div>
+  <a href="{% url 'aistudio:template_create' %}" class="btn-primary btn-sm">{% icon 'plus' 'w-4 h-4' %} Nouveau</a>
+</div>
+<p class="text-sm text-muted mb-4">Réutilise tes instructions favorites. Variables : <code class="text-maya">{description}</code>, <code class="text-maya">{style}</code>, <code class="text-maya">{caption}</code>.</p>
+<div class="space-y-3">
+  {% for t in templates %}
+    <div class="card p-4 flex items-start gap-3">
+      <span class="grid place-items-center w-10 h-10 rounded-full bg-peri/20 text-peri shrink-0">{% icon 'file-text' 'w-5 h-5' %}</span>
+      <div class="flex-1 min-w-0">
+        <p class="font-medium">{{ t.nom }} <span class="badge badge-muted ml-1">{{ t.get_type_display }}</span></p>
+        <p class="text-sm text-muted mt-1 break-words">{{ t.template_prompt }}</p>
+      </div>
+      <a href="{% url 'aistudio:template_update' t.pk %}" class="btn-ghost btn-sm !p-2" aria-label="Modifier">{% icon 'edit' 'w-4 h-4' %}</a>
+      <a href="{% url 'aistudio:template_delete' t.pk %}" class="btn-ghost btn-sm !p-2 text-salmon" aria-label="Supprimer">{% icon 'trash' 'w-4 h-4' %}</a>
+    </div>
+  {% empty %}
+    <p class="card-pad text-center text-muted">Aucun modèle. Crée-en un pour personnaliser tes générations.</p>
+  {% endfor %}
+</div>
+{% endblock %}

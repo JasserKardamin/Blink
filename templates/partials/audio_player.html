@@ -1,0 +1,27 @@
+{% load blink_tags %}
+<div class="rounded-2xl bg-surface2 {% if compact %}p-3{% else %}p-4{% endif %}" data-audio-player>
+  <div class="flex items-center gap-3">
+    <button type="button" class="grid place-items-center {% if compact %}w-10 h-10{% else %}w-12 h-12{% endif %} rounded-full bg-maya text-midnight shrink-0 hover:brightness-110 transition" data-audio-toggle aria-label="Lire le message vocal">
+      <span data-icon-play>{% icon 'play' 'w-5 h-5 translate-x-[1px]' %}</span>
+      <span data-icon-pause class="hidden">{% icon 'pause' 'w-5 h-5' %}</span>
+    </button>
+    <div class="flex-1 flex items-center gap-[3px] h-9 cursor-pointer" data-audio-wave>
+      {% waveform seed as bars %}
+      {% for h in bars %}<span class="wave-bar" style="height: {{ h }}%"></span>{% endfor %}
+    </div>
+    <span class="text-sm text-muted tabular-nums" data-audio-time>{{ duree|duration }}</span>
+    <audio preload="metadata" src="{{ audio.url }}" data-audio-el></audio>
+  </div>
+  {% if transcription %}
+    <div class="mt-2" {% if transcription.statut == 'en_attente' %}data-poll-url="{% url 'transcription-detail' transcription.pk %}"{% endif %}>
+      {% if transcription.statut == 'termine' %}
+        <p class="text-xs text-muted">Transcription{% if transcription.langue %} · {{ transcription.langue|upper }}{% endif %}</p>
+        <p class="{% if compact %}text-sm{% endif %} leading-relaxed">{{ transcription.texte }}</p>
+      {% elif transcription.statut == 'en_attente' %}
+        <p class="text-xs text-muted flex items-center gap-2">{% icon 'sparkles' 'w-3 h-3 text-peri animate-pulse' %} Transcription en cours…</p>
+      {% else %}
+        <p class="text-xs text-salmon flex items-center gap-1">{% icon 'mic-off' 'w-3 h-3' %} Transcription indisponible{% if transcription.owner == user %} — <a class="underline" href="{% url 'audio:transcription_update' transcription.pk %}">la saisir</a>{% endif %}</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

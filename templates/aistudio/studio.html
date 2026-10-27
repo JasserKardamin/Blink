@@ -1,0 +1,54 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Studio IA{% endblock %}
+{% block container %}max-w-4xl{% endblock %}
+{% block content %}
+<section class="card p-6 mb-6 relative overflow-hidden">
+  <div class="absolute -right-10 -top-10 w-48 h-48 rounded-full logo-gradient opacity-40 blur-2xl"></div>
+  <h1 class="text-2xl relative">Studio IA</h1>
+  <p class="text-muted text-sm mt-1 relative max-w-lg">Filtres artistiques, images dérivées par diffusion et avatars personnalisés.
+    {% if AI_STATUS.hf %}<span class="badge badge-green ml-1">Stable Diffusion connecté</span>{% else %}<span class="badge badge-muted ml-1">Mode local (OpenCV)</span>{% endif %}
+  </p>
+  <div class="flex flex-wrap gap-2 mt-5 relative">
+    <a href="{% url 'aistudio:avatar' %}" class="btn-ai btn-sm">{% icon 'sparkles' 'w-4 h-4' %} Générer mon avatar</a>
+    <a href="{% url 'aistudio:filters' %}" class="btn-outline btn-sm">{% icon 'palette' 'w-4 h-4' %} Mes filtres</a>
+    <a href="{% url 'aistudio:templates' %}" class="btn-outline btn-sm">{% icon 'file-text' 'w-4 h-4' %} Modèles de prompt</a>
+  </div>
+</section>
+
+{% if my_posts %}
+<section class="mb-8">
+  <h2 class="section-title mb-3">Transformer une de mes photos</h2>
+  <div class="flex gap-3 overflow-x-auto pb-2 snap-x">
+    {% for p in my_posts %}
+      <a href="{% url 'aistudio:generate' p.pk %}" class="group relative shrink-0 w-28 h-28 rounded-2xl overflow-hidden snap-start">
+        <img src="{{ p.image.url }}" class="w-full h-full object-cover" alt="" loading="lazy">
+        <span class="absolute inset-0 bg-peri/70 opacity-0 group-hover:opacity-100 transition grid place-items-center">{% icon 'wand' 'w-6 h-6' %}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="flex items-center gap-2 mb-4 flex-wrap">
+  <h2 class="section-title mr-2">Ma galerie</h2>
+  <a href="{% url 'aistudio:studio' %}" class="chip {% if not request.GET.type %}chip-active{% endif %}">Tout</a>
+  {% for value, label in types %}<a href="?type={{ value }}" class="chip {% if request.GET.type == value %}chip-active{% endif %}">{{ label }}</a>{% endfor %}
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+  {% for gen in images %}
+    <a href="{{ gen.get_absolute_url }}" class="group relative aspect-square rounded-2xl overflow-hidden bg-surface2">
+      {% if gen.image_generee %}
+        <img src="{{ gen.image_generee.url }}" class="w-full h-full object-cover group-hover:scale-105 transition" alt="" loading="lazy">
+      {% else %}
+        <img src="{{ gen.image_originale.url }}" class="w-full h-full object-cover opacity-40 blur-sm" alt="">
+        <span class="absolute inset-0 grid place-items-center text-sm">{% if gen.statut == 'erreur' %}<span class="text-salmon">Erreur</span>{% else %}<span class="flex items-center gap-2">{% icon 'sparkles' 'w-4 h-4 animate-pulse text-peri' %} En cours…</span>{% endif %}</span>
+      {% endif %}
+      <span class="absolute bottom-2 left-2 badge bg-midnight/80 text-alice">{{ gen.get_style_display }}</span>
+      <span class="absolute top-2 right-2 badge {% if gen.type == 'avatar' %}badge-salmon{% elif gen.type == 'derivee' %}badge-peri{% else %}badge-maya{% endif %} bg-midnight/80">{{ gen.get_type_display }}</span>
+    </a>
+  {% empty %}
+    <p class="col-span-full text-center text-muted py-10">Ta galerie est vide. Choisis une photo ci-dessus pour commencer !</p>
+  {% endfor %}
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}
