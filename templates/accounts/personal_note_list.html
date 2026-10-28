@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Mes notes privées{% endblock %}
+{% block container %}max-w-3xl{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  <div>
+    <h1 class="text-2xl">Mes notes privées</h1>
+    <p class="text-muted text-sm mt-1">Ces notes sont visibles uniquement par toi.</p>
+  </div>
+  <a href="{% url 'accounts:personal_note_create' %}" class="btn-primary btn-sm">{% icon 'plus' 'w-4 h-4' %} Nouvelle note</a>
+</div>
+
+{% if notes %}
+  <div class="space-y-4">
+    {% for note in notes %}
+      <article class="card p-5">
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <h2 class="font-semibold">
+              <a href="{{ note.friend.get_absolute_url }}" class="hover:underline">{{ note.friend.display_name }}</a>
+              <span class="text-muted font-normal text-sm">@{{ note.friend.username }}</span>
+            </h2>
+            <p class="text-xs text-muted mt-1">Modifiée le {{ note.date_modification|date:"j F Y à H:i" }}</p>
+            <p class="mt-3 whitespace-pre-wrap break-words">{{ note.contenu }}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <a href="{% url 'accounts:personal_note_edit' note.pk %}" class="btn-ghost btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier</a>
+            <a href="{% url 'accounts:personal_note_delete' note.pk %}" class="btn-outline btn-sm text-salmon border-salmon/40 hover:bg-salmon/10">{% icon 'trash' 'w-4 h-4' %} Supprimer</a>
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card p-12 text-center">
+    <h2 class="text-lg font-semibold">Aucune note pour le moment</h2>
+    <p class="text-muted text-sm mt-1">Crée une note privée pour te souvenir d'un détail sur un(e) ami(e).</p>
+    {% if user.friends.exists %}
+      <a href="{% url 'accounts:personal_note_create' %}" class="btn-primary btn-sm mt-4">Créer une note</a>
+    {% else %}
+      <a href="{% url 'accounts:friends' %}" class="btn-outline btn-sm mt-4">Voir mes amis</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

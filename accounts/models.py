@@ -141,6 +141,26 @@ class Friendship(models.Model):
         return f"{self.user_from} → {self.user_to} ({self.get_statut_display()})"
 
 
+class PersonalNote(models.Model):
+    """Private note one user keeps about one of their friends."""
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="personal_notes")
+    friend = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notes_about")
+    contenu = models.TextField(max_length=2000)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date_modification"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "friend"], name="unique_personal_note_per_friend"),
+            models.CheckConstraint(condition=~Q(owner=models.F("friend")), name="no_personal_note_about_self"),
+        ]
+
+    def __str__(self):
+        return f"Note privée de {self.owner} sur {self.friend}"
+
+
 class Follow(models.Model):
     """Abonnement (asymétrique) d'un utilisateur à un autre."""
 
