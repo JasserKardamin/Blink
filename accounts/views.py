@@ -7,14 +7,14 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
 from core.models import Notification, notify
 from core.tasks import run_async
 from faces.services import encode_user_by_id
 
-from .forms import LoginForm, ProfileForm, SignUpForm, UserUpdateForm
-from .models import Friendship, User
+from .forms import LoginForm, PersonalNoteForm, ProfileForm, SignUpForm, UserUpdateForm
+from .models import Friendship, PersonalNote, User
 
 
 class SignUpView(CreateView):
@@ -110,6 +110,64 @@ class FriendsView(LoginRequiredMixin, TemplateView):
             suggestions=User.objects.filter(is_active=True).exclude(pk__in=excluded).order_by("-date_joined")[:8],
         )
         return ctx
+
+
+class PersonalNoteListView(LoginRequiredMixin, ListView):
+    model = PersonalNote
+    template_name = "accounts/personal_note_list.html"
+    context_object_name = "notes"
+
+    def get_queryset(self):
+        return PersonalNote.objects.filter(owner=self.request.user).select_related("friend")
+
+
+class PersonalNoteCreateView(LoginRequiredMixin, CreateView):
+    model = PersonalNote
+    form_class = PersonalNoteForm
+    template_name = "accounts/personal_note_form.html"
+    success_url = reverse_lazy("accounts:personal_notes")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        messages.success(self.request, "Note personnelle enregistrée.")
+        return super().form_valid(form)
+
+
+class PersonalNoteUpdateView(LoginRequiredMixin, UpdateView):
+    model = PersonalNote
+    form_class = PersonalNoteForm
+    template_name = "accounts/personal_note_form.html"
+    success_url = reverse_lazy("accounts:personal_notes")
+
+    def get_queryset(self):
+        return PersonalNote.objects.filter(owner=self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, "Note personnelle mise à jour.")
+        return super().form_valid(form)
+
+
+class PersonalNoteDeleteView(LoginRequiredMixin, DeleteView):
+    model = PersonalNote
+    template_name = "accounts/personal_note_confirm_delete.html"
+    success_url = reverse_lazy("accounts:personal_notes")
+
+    def get_queryset(self):
+        return PersonalNote.objects.filter(owner=self.request.user)
+
+    def form_valid(self, form):
+        messages.success(self.request, "Note personnelle supprimée.")
+        return super().form_valid(form)
 
 
 class FriendRequestView(LoginRequiredMixin, View):

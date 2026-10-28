@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Supprimer ma note{% endblock %}
+{% block container %}max-w-xl{% endblock %}
+{% block content %}
+<section class="card-pad">
+  <h1 class="text-2xl mb-3">Supprimer cette note ?</h1>
+  <p class="text-muted mb-2">Ta note privée sur {{ object.friend.display_name }} sera supprimée définitivement.</p>
+  <p class="card p-4 whitespace-pre-wrap break-words mb-6">{{ object.contenu }}</p>
+  <form method="post" class="flex gap-2">
+    {% csrf_token %}
+    <button type="submit" class="btn-primary btn-sm">Supprimer</button>
+    <a href="{% url 'accounts:personal_notes' %}" class="btn-ghost btn-sm">Annuler</a>
+  </form>
+</section>
+{% endblock %}

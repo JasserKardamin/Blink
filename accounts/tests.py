@@ -1,6 +1,6 @@
 from django.urls import reverse
 
-from accounts.models import Friendship, User
+from accounts.models import Friendship, PersonalNote, User
 from core.models import Notification
 from core.testing import BlinkTestCase
 
@@ -89,3 +89,50 @@ class FriendshipTests(BlinkTestCase):
         self.assertTrue(self.nour.is_following(self.sami))
         self.client.post(reverse("accounts:follow", args=["sami"]))
         self.assertFalse(self.nour.is_following(self.sami))
+
+
+class PersonalNoteTests(BlinkTestCase):
+    def setUp(self):
+        self.nour = self.make_user("nour")
+        self.sami = self.make_user("sami")
+        self.befriend(self.nour, self.sami)
+        self.client.force_login(self.nour)
+
+    def test_create_list_update_and_delete_private_note(self):
+        create_url = reverse("accounts:personal_note_create")
+        response = self.client.post(create_url, {"friend": self.sami.pk, "contenu": "Aime le café"})
+        self.assertRedirects(response, reverse("accounts:personal_notes"))
+        note = PersonalNote.objects.get(owner=self.nour, friend=self.sami)
+
+        response = self.client.get(reverse("accounts:personal_notes"))
+        self.assertContains(response, "Aime le café")
+        self.assertContains(response, "sami")
+
+        response = self.client.post(
+            reverse("accounts:personal_note_edit", args=[note.pk]),
+            {"friend": self.sami.pk, "contenu": "Préfère le thé"},
+        )
+        self.assertRedirects(response, reverse("accounts:personal_notes"))
+        note.refresh_from_db()
+        self.assertEqual(note.contenu, "Préfère le thé")
+
+        response = self.client.post(reverse("accounts:personal_note_delete", args=[note.pk]))
+        self.assertRedirects(response, reverse("accounts:personal_notes"))
+        self.assertFalse(PersonalNote.objects.filter(pk=note.pk).exists())
+
+    def test_notes_are_private_and_other_users_cannot_modify_them(self):
+        note = PersonalNote.objects.create(owner=self.nour, friend=self.sami, contenu="Secret")
+
+        self.client.force_login(self.sami)
+        self.assertNotContains(self.client.get(reverse("accounts:personal_notes")), "Secret")
+        self.assertEqual(self.client.get(reverse("accounts:personal_note_edit", args=[note.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("accounts:personal_note_delete", args=[note.pk])).status_code, 404)
+
+    def test_note_can_only_be_created_for_a_friend(self):
+        outsider = self.make_user("lina")
+        response = self.client.post(
+            reverse("accounts:personal_note_create"),
+            {"friend": outsider.pk, "contenu": "Not a friend"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(PersonalNote.objects.filter(owner=self.nour).exists())

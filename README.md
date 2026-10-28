@@ -8,6 +8,7 @@ artistiques et reconnaît les amis sur les photos.
 | Fonctionnalité | Technologie | Sans clé d'API |
 |---|---|---|
 | Publication photo + audio | Django, Pillow | ✅ |
+| Notes personnelles privées sur ses amis | Django ORM | ✅ |
 | Légendes stylisées (poétique, marketing, humoristique) | Gemini API | générateur local (analyse des couleurs) |
 | Hashtags automatiques | Gemini API | générateur local |
 | Filtres IA / images dérivées / avatars | Hugging Face (Stable Diffusion) | filtres OpenCV (anime, peinture, cyberpunk…) |
@@ -88,7 +89,7 @@ leur statut via l'API (`/api/transcriptions/<id>/`, `/api/generated-images/<id>/
 
 | Application | Gestion | Modèles |
 |---|---|---|
-| `accounts` | Commune : utilisateurs, profils, amis | `User`, `Profile`, `Friendship`, `Follow` |
+| `accounts` | Commune : utilisateurs, profils, amis, notes privées | `User`, `Profile`, `Friendship`, `Follow`, `PersonalNote` |
 | `posts` | 1 — Publications + Gemini | `Post`, `Reaction`, `Comment`, `AIGeneration` |
 | `audio` | 2 — Audio & transcription | `AudioPost`, `Transcription`, `AudioComment` |
 | `aistudio` | 3 — IA générative d'images | `GeneratedImage`, `AIPromptTemplate`, `ImageFilter` |
