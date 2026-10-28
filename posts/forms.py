@@ -50,5 +50,8 @@ class CommentForm(forms.ModelForm):
 class ReportForm(forms.ModelForm):
     class Meta:
         model = Report
-        fields = ("motif", "details")
-        widgets = {"details": forms.Textarea(attrs={"rows": 3, "placeholder": "Précisions (optionnel)"})}
+        fields = ('motif', 'details')
+        widgets = {
+            'motif': forms.Select(attrs={'class': 'w-full'}),
+            'details': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Précisions (optionnel)'}),
+        }

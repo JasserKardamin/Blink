@@ -91,3 +91,50 @@ class NotificationOpenView(LoginRequiredMixin, View):
         notif.lu = True
         notif.save(update_fields=["lu"])
         return redirect(notif.lien or "core:notifications")
+
+
+from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views.generic import UpdateView, DeleteView
+from django.urls import reverse_lazy
+from .models import Report
+from posts.forms import ReportForm
+
+class UserReportListView(LoginRequiredMixin, ListView):
+    template_name = 'core/report_list.html'
+    context_object_name = 'reports'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Report.objects.filter(auteur=self.request.user).select_related(
+            'post', 'comment', 'reported_user', 'moderateur'
+        ).order_by('-date')
+
+
+class UserReportUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Report
+    form_class = ReportForm
+    template_name = 'core/report_form.html'
+    success_url = reverse_lazy('core:my_reports')
+
+    def test_func(self):
+        report = self.get_object()
+        return report.auteur == self.request.user and report.statut == Report.Statut.EN_ATTENTE
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Signalement mis à jour avec succès.')
+        return super().form_valid(form)
+
+
+class UserReportDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Report
+    template_name = 'core/report_confirm_delete.html'
+    success_url = reverse_lazy('core:my_reports')
+
+    def test_func(self):
+        report = self.get_object()
+        return report.auteur == self.request.user and report.statut == Report.Statut.EN_ATTENTE
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Votre signalement a été retiré.')
+        return super().delete(request, *args, **kwargs)

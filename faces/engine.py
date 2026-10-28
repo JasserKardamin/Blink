@@ -78,7 +78,7 @@ def ensure_models():
         return ok
 
 
-def load_bgr(field_file, max_side=1600):
+def load_bgr(field_file, max_side=1024):
     """Charge une image Django en tableau BGR (orientation EXIF corrigée)."""
     field_file.open("rb")
     img = Image.open(field_file)
@@ -92,7 +92,7 @@ class FaceEngine:
     def __init__(self):
         self.recognition = ensure_models()
         if self.recognition:
-            self.detector = cv2.FaceDetectorYN.create(str(model_path("yunet")[0]), "", (320, 320), 0.8, 0.3, 5000)
+            self.detector = cv2.FaceDetectorYN.create(str(model_path("yunet")[0]), "", (320, 320), 0.7, 0.3, 5000)
             self.recognizer = cv2.FaceRecognizerSF.create(str(model_path("sface")[0]), "")
         else:
             # OpenCV 5 ne fournit plus CascadeClassifier : sans modèles, pas de détection.

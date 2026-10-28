@@ -22,6 +22,7 @@
       <a href="{% url 'accounts:edit' %}" class="btn-outline btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier le profil</a>
       <a href="{% url 'aistudio:avatar' %}" class="btn-ai btn-sm">{% icon 'sparkles' 'w-4 h-4' %} Avatar IA</a>
       <a href="{% url 'faces:my_tags' %}" class="btn-ghost btn-sm">{% icon 'scan-face' 'w-4 h-4' %} Mes identifications</a>
+      <a href="{% url 'core:my_reports' %}" class="btn-ghost btn-sm">{% icon 'flag' 'w-4 h-4' %} Mes signalements</a>
     {% elif user.is_authenticated %}
       {% if not friendship %}
         <form method="post" action="{% url 'accounts:friend_request' profile_user.username %}">{% csrf_token %}<button class="btn-primary btn-sm">{% icon 'user-plus' 'w-4 h-4' %} Ajouter en ami</button></form>

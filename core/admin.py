@@ -7,34 +7,55 @@ from .models import Notification, Report
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ("id", "post_thumb", "motif", "auteur", "post_auteur", "traite", "date")
-    list_filter = ("traite", "motif")
-    search_fields = ("details", "post__caption", "auteur__username")
-    list_editable = ("traite",)
-    actions = ["masquer_posts", "classer_sans_suite"]
+    list_display = ("id", "target_preview", "motif", "statut", "action_prise", "auteur", "moderateur", "date")
+    list_filter = ("statut", "motif", "action_prise", "traite")
+    search_fields = ("details", "post__caption", "auteur__username", "notes_moderation")
+    readonly_fields = ("date", "date_traitement")
+    actions = ["approuver_et_masquer", "rejeter_signalement"]
 
-    @admin.display(description="Publication")
-    def post_thumb(self, obj):
-        return format_html(
-            '<a href="{}"><img src="{}" style="width:48px;height:48px;object-fit:cover;border-radius:8px"></a>',
-            reverse("admin:posts_post_change", args=[obj.post_id]), obj.post.image.url,
-        )
+    @admin.display(description="Cible")
+    def target_preview(self, obj):
+        if obj.post:
+            thumb = obj.post.image.url if obj.post.image else ""
+            return format_html(
+                '<a href="{}">Post #{} {}</a>',
+                reverse("admin:posts_post_change", args=[obj.post_id]),
+                obj.post_id,
+                f'(par {obj.post.auteur})',
+            )
+        elif obj.comment:
+            return format_html("Commentaire #{}: {}", obj.comment_id, obj.comment.texte[:30])
+        elif obj.reported_user:
+            return format_html("Utilisateur: {}", obj.reported_user.username)
+        return "—"
 
-    @admin.display(description="Auteur du post")
-    def post_auteur(self, obj):
-        return obj.post.auteur
-
-    @admin.action(description="Masquer les publications signalées")
-    def masquer_posts(self, request, queryset):
+    @admin.action(description="Approuver et masquer les publications signalées")
+    def approuver_et_masquer(self, request, queryset):
         from posts.models import Post
+        from django.utils import timezone
 
-        Post.objects.filter(reports__in=queryset).update(est_masque=True)
-        queryset.update(traite=True)
-        self.message_user(request, "Publications masquées et signalements traités.")
+        for report in queryset:
+            if report.post:
+                report.post.est_masque = True
+                report.post.save(update_fields=["est_masque"])
+                report.action_prise = Report.Action.MASQUER
+            report.statut = Report.Statut.APPROUVE
+            report.moderateur = request.user
+            report.date_traitement = timezone.now()
+            report.save()
+        self.message_user(request, f"{queryset.count()} signalement(s) approuvé(s) et contenu masqué.")
 
-    @admin.action(description="Classer sans suite")
-    def classer_sans_suite(self, request, queryset):
-        self.message_user(request, f"{queryset.update(traite=True)} signalement(s) classé(s).")
+    @admin.action(description="Rejeter les signalements sélectionnés")
+    def rejeter_signalement(self, request, queryset):
+        from django.utils import timezone
+
+        for report in queryset:
+            report.statut = Report.Statut.REJETE
+            report.action_prise = Report.Action.AUCUNE
+            report.moderateur = request.user
+            report.date_traitement = timezone.now()
+            report.save()
+        self.message_user(request, f"{queryset.count()} signalement(s) rejeté(s).")
 
 
 @admin.register(Notification)

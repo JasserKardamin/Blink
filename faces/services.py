@@ -104,6 +104,13 @@ def detect_faces_for_post(post):
             if matched:
                 recognized += 1
                 TagSuggestion.objects.create(detected_face=detected, user_suggere=matched, auto=True)
+                notify(
+                    matched,
+                    Notification.Type.TAG,
+                    f"{post.auteur} a partagé une photo où tu apparais peut-être — confirme ton tag !",
+                    acteur=post.auteur,
+                    lien=post.get_absolute_url(),
+                )
             created.append(detected)
 
     from posts.models import AIGeneration

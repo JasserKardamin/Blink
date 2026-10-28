@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from core.models import Notification, Report
 from core.testing import BlinkTestCase, make_image
-from posts.models import Post
+from posts.models import Comment, Post
 
 
 class CoreViewTests(BlinkTestCase):
@@ -47,11 +47,82 @@ class CoreViewTests(BlinkTestCase):
         self.assertContains(resp, "Tableau de bord Blink")
         self.assertContains(resp, "Signalements à traiter")
         resp = self.client.post(reverse("admin:core_report_changelist"), {
-            "action": "masquer_posts", "_selected_action": [report.pk],
+            "action": "approuver_et_masquer", "_selected_action": [report.pk],
         })
         post.refresh_from_db()
         report.refresh_from_db()
-        self.assertTrue(post.est_masque and report.traite)
+        self.assertTrue(post.est_masque and report.traite and report.statut == Report.Statut.APPROUVE)
+
+
+class ReportAPITests(BlinkTestCase):
+    def setUp(self):
+        self.nour = self.make_user("nour")
+        self.sami = self.make_user("sami")
+        self.admin = self.make_user("admin_user", is_staff=True)
+        self.post = Post.objects.create(auteur=self.nour, image=make_image(), caption="Offensive content")
+        self.comment = Comment.objects.create(post=self.post, user=self.nour, contenu="Spam comment")
+
+    def test_create_report_on_post(self):
+        self.client.force_login(self.sami)
+        res = self.client.post(
+            "/api/reports/",
+            {"post": self.post.pk, "motif": "spam", "details": "Too many ads."},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 201)
+        data = res.json()
+        self.assertEqual(data["motif"], "spam")
+        self.assertEqual(Report.objects.filter(auteur=self.sami, post=self.post).count(), 1)
+
+    def test_cannot_report_own_content(self):
+        self.client.force_login(self.nour)
+        res = self.client.post(
+            "/api/reports/",
+            {"post": self.post.pk, "motif": "spam"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_staff_moderation_resolve_approve_and_mask(self):
+        report = Report.objects.create(auteur=self.sami, post=self.post, motif="haine")
+
+        # Non-staff cannot resolve
+        self.client.force_login(self.sami)
+        res = self.client.patch(
+            f"/api/reports/{report.pk}/resolve/",
+            {"statut": "approuve", "action_prise": "masquer", "notes_moderation": "Violates TOS"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 403)
+
+        # Staff resolves
+        self.client.force_login(self.admin)
+        res = self.client.patch(
+            f"/api/reports/{report.pk}/resolve/",
+            {"statut": "approuve", "action_prise": "masquer", "notes_moderation": "Violates TOS"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 200)
+
+        self.post.refresh_from_db()
+        report.refresh_from_db()
+        self.assertTrue(self.post.est_masque)
+        self.assertEqual(report.statut, Report.Statut.APPROUVE)
+        self.assertEqual(report.moderateur, self.admin)
+        # Notifications sent to both parties
+        self.assertTrue(Notification.objects.filter(destinataire=self.nour).exists())
+        self.assertTrue(Notification.objects.filter(destinataire=self.sami).exists())
+
+    def test_staff_moderation_resolve_delete_comment(self):
+        report = Report.objects.create(auteur=self.sami, comment=self.comment, motif="spam")
+        self.client.force_login(self.admin)
+        res = self.client.patch(
+            f"/api/reports/{report.pk}/resolve/",
+            {"statut": "approuve", "action_prise": "supprimer"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(Comment.objects.filter(pk=self.comment.pk).exists())
 
 
 class TemplateTagTests(BlinkTestCase):
