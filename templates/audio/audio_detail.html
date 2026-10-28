@@ -12,18 +12,23 @@
   </header>
   {% if audio_post.description %}<p>{{ audio_post.description|hashtagify }}</p>{% endif %}
   {% if audio_post.post %}
-    <a href="{{ audio_post.post.get_absolute_url }}" class="flex items-center gap-3 rounded-2xl bg-surface2 p-2 hover:bg-line">
-      <img src="{{ audio_post.post.image.url }}" class="w-14 h-14 rounded-xl object-cover" alt=""><span class="text-sm">Voir la photo associée →</span>
-    </a>
+  <a href="{{ audio_post.post.get_absolute_url }}" class="flex items-center gap-3 rounded-2xl bg-surface2 p-2 hover:bg-line">
+    <img src="{{ audio_post.post.image.url }}" class="w-14 h-14 rounded-xl object-cover" alt=""><span class="text-sm">Voir la photo associée →</span>
+  </a>
   {% endif %}
   {% include "partials/audio_player.html" with audio=audio_post.fichier_audio duree=audio_post.duree seed=audio_post.pk transcription=audio_post.transcription %}
 
   {% with t=audio_post.transcription %}
   {% if t %}
-  <dl class="grid grid-cols-3 gap-3 text-sm">
-    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Statut</dt><dd>{{ t.get_statut_display }}</dd></div>
-    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Langue</dt><dd>{{ t.langue|upper|default:"—" }}</dd></div>
-    <div class="rounded-2xl bg-surface2 p-3"><dt class="text-xs text-muted">Moteur</dt><dd>{{ t.moteur|default:"—" }}</dd></div>
+  <dl class="grid grid-cols-2 gap-3 text-sm">
+    <div class="rounded-2xl bg-surface2 p-3">
+      <dt class="text-xs text-muted">Statut</dt>
+      <dd>{{ t.get_statut_display }}</dd>
+    </div>
+    <div class="rounded-2xl bg-surface2 p-3">
+      <dt class="text-xs text-muted">Langue</dt>
+      <dd>{{ t.langue|upper|default:"—" }}</dd>
+    </div>
   </dl>
   {% if t.erreur and audio_post.user == user %}<p class="text-xs text-salmon">{{ t.erreur }}</p>{% endif %}
   {% endif %}
