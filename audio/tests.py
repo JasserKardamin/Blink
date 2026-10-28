@@ -93,3 +93,33 @@ class AudioViewsTests(BlinkTestCase):
         audio = AudioPost.objects.create(user=self.nour, post=private, fichier_audio=fake_audio())
         self.client.force_login(self.sami)
         self.assertEqual(self.client.get(audio.get_absolute_url()).status_code, 404)
+
+    def test_formatted_duration_and_helpers(self):
+        audio = AudioPost.objects.create(user=self.nour, fichier_audio=fake_audio(), duree=75)
+        self.assertEqual(audio.formatted_duration, "01:15")
+        t = Transcription.objects.create(audio_post=audio, statut=Transcription.Statut.TERMINE, texte="Bonjour")
+        self.assertTrue(t.is_completed)
+        self.assertFalse(t.is_error)
+        self.assertFalse(t.is_pending)
+        self.assertTrue(audio.has_transcription)
+
+    def test_audio_post_list_search(self):
+        self.client.force_login(self.nour)
+        a1 = AudioPost.objects.create(user=self.nour, fichier_audio=fake_audio(), description="Podcast sur Django")
+        a2 = AudioPost.objects.create(user=self.nour, fichier_audio=fake_audio(), description="Discussion musicale")
+        resp = self.client.get(reverse("audio:list") + "?q=Django")
+        self.assertContains(resp, "Podcast sur Django")
+        self.assertNotContains(resp, "Discussion musicale")
+
+    def test_audio_post_update_view(self):
+        audio = AudioPost.objects.create(user=self.nour, fichier_audio=fake_audio(), description="Ancienne description")
+        url = reverse("audio:update", args=[audio.pk])
+        # Un autre utilisateur ne peut pas modifier
+        self.client.force_login(self.sami)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        # L'auteur peut modifier
+        self.client.force_login(self.nour)
+        resp = self.client.post(url, {"description": "Nouvelle description"})
+        self.assertRedirects(resp, audio.get_absolute_url())
+        audio.refresh_from_db()
+        self.assertEqual(audio.description, "Nouvelle description")

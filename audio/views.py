@@ -14,7 +14,7 @@ from core.models import Notification, notify
 from core.tasks import run_async
 from posts.models import Post
 
-from .forms import AudioCommentForm, AudioPostForm, TranscriptionForm
+from .forms import AudioCommentForm, AudioPostForm, AudioPostUpdateForm, TranscriptionForm
 from .models import AudioComment, AudioPost, Transcription
 from .services import transcribe_by_id
 
@@ -36,7 +36,15 @@ class AudioPostListView(LoginRequiredMixin, ListView):
         qs = visible_audio_posts(self.request.user)
         if self.request.GET.get("filtre") == "moi":
             qs = qs.filter(user=self.request.user)
+        query = self.request.GET.get("q", "").strip()
+        if query:
+            qs = qs.filter(Q(description__icontains=query) | Q(transcription__texte__icontains=query))
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_query"] = self.request.GET.get("q", "").strip()
+        return context
 
 
 class AudioPostCreateView(LoginRequiredMixin, CreateView):
@@ -59,6 +67,23 @@ class AudioPostDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return visible_audio_posts(self.request.user)
+
+
+class AudioPostUpdateView(OwnerRequiredMixin, UpdateView):
+    """Permet à l'auteur de modifier la description de son message vocal (CRUD Update)."""
+
+    model = AudioPost
+    form_class = AudioPostUpdateForm
+    template_name = "audio/audio_edit.html"
+    owner_field = "user"
+    allow_staff = False
+
+    def form_valid(self, form):
+        messages.success(self.request, "Description du vocal mise à jour.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return self.object.get_absolute_url()
 
 
 class AudioPostDeleteView(OwnerRequiredMixin, SuccessMessageDeleteMixin, DeleteView):

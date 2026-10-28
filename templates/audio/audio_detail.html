@@ -29,7 +29,8 @@
   {% endif %}
   {% if audio_post.user == user %}
   <div class="flex flex-wrap gap-2 pt-2">
-    {% if t %}<a href="{% url 'audio:transcription_update' t.pk %}" class="btn-outline btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier le texte</a>{% endif %}
+    <a href="{% url 'audio:update' audio_post.pk %}" class="btn-ghost btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier description</a>
+    {% if t %}<a href="{% url 'audio:transcription_update' t.pk %}" class="btn-outline btn-sm">{% icon 'edit' 'w-4 h-4' %} Modifier texte</a>{% endif %}
     <form method="post" action="{% url 'audio:retranscribe' 'post' audio_post.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-ai btn-sm">{% icon 'refresh' 'w-4 h-4' %} Re-transcrire</button></form>
     <a href="{% url 'audio:delete' audio_post.pk %}" class="btn-ghost btn-sm text-salmon">{% icon 'trash' 'w-4 h-4' %} Supprimer</a>
   </div>

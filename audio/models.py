@@ -43,6 +43,21 @@ class Transcription(models.Model):
         comment = getattr(self, "audio_comment", None)
         return comment.fichier_audio if comment else None
 
+    @property
+    def is_completed(self):
+        """Vérifie si la transcription est terminée avec succès."""
+        return self.statut == self.Statut.TERMINE
+
+    @property
+    def is_pending(self):
+        """Vérifie si la transcription est en cours d'analyse."""
+        return self.statut == self.Statut.EN_ATTENTE
+
+    @property
+    def is_error(self):
+        """Vérifie si une erreur est survenue lors de la transcription."""
+        return self.statut == self.Statut.ERREUR
+
 
 class AudioPost(models.Model):
     """Message vocal publié seul ou attaché à une publication photo."""
@@ -66,6 +81,18 @@ class AudioPost(models.Model):
 
     def get_absolute_url(self):
         return reverse("audio:detail", kwargs={"pk": self.pk})
+
+    @property
+    def formatted_duration(self):
+        """Retourne la durée formatée en MM:SS."""
+        minutes = self.duree // 60
+        seconds = self.duree % 60
+        return f"{minutes:02d}:{seconds:02d}"
+
+    @property
+    def has_transcription(self):
+        """Indique si une transcription textuelle est disponible."""
+        return hasattr(self, "transcription") and bool(self.transcription.texte)
 
     def transcribe(self):
         from .services import transcribe_object
@@ -92,6 +119,13 @@ class AudioComment(models.Model):
 
     def __str__(self):
         return f"Vocal de {self.user} sur post {self.post_id}"
+
+    @property
+    def formatted_duration(self):
+        """Retourne la durée formatée en MM:SS."""
+        minutes = self.duree // 60
+        seconds = self.duree % 60
+        return f"{minutes:02d}:{seconds:02d}"
 
     def transcribe(self):
         from .services import transcribe_object

@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Modifier la description{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <a href="{{ object.get_absolute_url }}" class="btn-ghost btn-sm !p-2" aria-label="Retour">{% icon 'arrow-left' 'w-5 h-5' %}</a>
+  <h1 class="text-2xl">Modifier le vocal</h1>
+</div>
+<form method="post" class="card-pad space-y-5" novalidate>{% csrf_token %}
+  {{ form.non_field_errors }}
+  {% include "partials/form_field.html" with field=form.description %}
+  <div class="flex gap-2">
+    <button class="btn-primary flex-1">{% icon 'check' 'w-4 h-4' %} Enregistrer</button>
+    <a href="{{ object.get_absolute_url }}" class="btn-ghost">Annuler</a>
+  </div>
+</form>
+{% endblock %}
