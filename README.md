@@ -16,6 +16,8 @@ artistiques et reconnaît les amis sur les photos.
 | Reconnaissance faciale & tags d'amis | OpenCV YuNet + SFace (ONNX) | ✅ (100 % local) |
 | Likes / réactions, commentaires texte et vocaux, amis, abonnements | Django ORM | ✅ |
 | Authentification, profils | Django Auth | ✅ |
+| Mot de passe oublié (lien par e-mail), changement de mot de passe | Django Auth + SMTP | e-mails affichés dans la console |
+| Double authentification (TOTP + codes de secours) | pyotp, segno (QR code) | ✅ |
 
 L'application fonctionne entièrement **sans aucune clé** : chaque service d'IA externe
 dispose d'une solution de repli locale. Ajoute `GEMINI_API_KEY` et/ou `HF_TOKEN` dans
@@ -43,6 +45,18 @@ Ouvre http://127.0.0.1:8000.
 | `admin` (dashboard : http://127.0.0.1:8000/admin/) | `admin12345` |
 
 > L'enregistrement vocal dans le navigateur nécessite `localhost` ou HTTPS (règle des navigateurs pour le micro).
+
+### Sécurité du compte
+
+- **Mot de passe oublié** : lien « Mot de passe oublié ? » sur la page de connexion. Sans `EMAIL_HOST`
+  dans `.env`, l'e-mail (et son lien) s'affiche dans le terminal de `runserver`. Pour un vrai envoi,
+  renseigner `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`
+  (voir `.env.example`). Le lien expire après 1 heure et ne sert qu'une fois.
+- **Changer de mot de passe / double authentification** : menu du compte → *Sécurité*.
+  La 2FA s'active en scannant un QR code avec Google Authenticator, Authy, 2FAS… et fournit
+  10 codes de secours à usage unique. Elle s'applique aussi au dashboard admin et à l'API
+  (`POST /api/auth/token/` attend alors un champ `otp`). Un administrateur peut désactiver la 2FA
+  d'un utilisateur ayant perdu son téléphone et ses codes (admin → *Doubles authentifications*).
 
 ## Déploiement (Docker + PostgreSQL)
 
@@ -133,7 +147,7 @@ une transcription…).
 
 | Méthode | URL | Rôle |
 |---|---|---|
-| POST | `/api/auth/token/` | obtenir un jeton (`Authorization: Token …`) |
+| POST | `/api/auth/token/` | obtenir un jeton (`Authorization: Token …`) ; champ `otp` si 2FA active |
 | GET/POST | `/api/posts/` (`?feed=1`, `?auteur=`, `?hashtag=`) | fil, création |
 | POST | `/api/posts/<id>/react/` | réagir (like, love, haha, sad) |
 | GET/POST | `/api/posts/<id>/comments/` | commentaires |

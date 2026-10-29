@@ -62,7 +62,7 @@ class AudioViewsTests(BlinkTestCase):
         comment = AudioComment.objects.get()
         self.assertEqual(comment.transcription.texte, "Je prends les sandwichs.")
         self.assertEqual(comment.transcription.owner, self.sami)
-        self.assertTrue(Notification.objects.filter(destinataire=self.nour, type="commentaire_vocal").exists())
+        self.assertTrue(Notification.objects.filter(destinataire=self.nour, type="commentaire").exists())
         # Le post affiche le commentaire vocal et sa transcription.
         page = self.client.get(self.post.get_absolute_url())
         self.assertContains(page, "Je prends les sandwichs.")

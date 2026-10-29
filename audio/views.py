@@ -159,7 +159,7 @@ class AudioCommentCreateView(LoginRequiredMixin, View):
             comment.transcription = Transcription.objects.create()
             comment.save()
             run_async(transcribe_by_id, "comment", comment.pk)
-        notify(post.auteur, Notification.Type.COMMENTAIRE_VOCAL, f"{request.user} a laissé un commentaire vocal.",
+        notify(post.auteur, Notification.Type.COMMENTAIRE, f"{request.user} a laissé un commentaire vocal.",
                acteur=request.user, lien=post.get_absolute_url())
         payload = {"id": comment.pk, "transcription": comment.transcription_id}
         return json_or_redirect(request, payload, redirect(f"{post.get_absolute_url()}#commentaires"), status=201)

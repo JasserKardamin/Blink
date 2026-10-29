@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 
-from .models import Follow, Friendship, Profile, User
+from .models import Follow, Friendship, Profile, TwoFactorDevice, User
 
 
 class ProfileInline(admin.StackedInline):
@@ -58,3 +58,23 @@ class FollowAdmin(admin.ModelAdmin):
     list_display = ("follower", "followed", "date")
     search_fields = ("follower__username", "followed__username")
     autocomplete_fields = ("follower", "followed")
+
+
+@admin.register(TwoFactorDevice)
+class TwoFactorDeviceAdmin(admin.ModelAdmin):
+    """Lecture seule : supprimer la ligne désactive la 2FA (utilisateur ayant perdu téléphone et codes)."""
+
+    list_display = ("user", "date_activation", "codes_restants")
+    search_fields = ("user__username", "user__email")
+    fields = ("user", "date_activation", "codes_restants")
+    readonly_fields = fields
+
+    @admin.display(description="codes de secours restants")
+    def codes_restants(self, obj):
+        return len(obj.recovery_codes)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

@@ -1,6 +1,8 @@
 from django import forms
 from django.db.models import Q
 
+from core.validators import validate_image_format
+
 from .models import AIPromptTemplate, GeneratedImage, ImageFilter, Style
 
 
@@ -60,6 +62,17 @@ class ImageFilterForm(forms.ModelForm):
             if key in params:
                 self.fields[key].initial = params[key]
 
+    def clean_nom(self):
+        nom = " ".join((self.cleaned_data.get("nom") or "").split())
+        if not nom:
+            raise forms.ValidationError("Le nom ne peut pas être vide.")
+        return nom
+
+    def clean_preview(self):
+        preview = self.cleaned_data.get("preview")
+        validate_image_format(preview)
+        return preview
+
     def save(self, commit=True):
         self.instance.parametres = {
             "base": self.cleaned_data["base"],
@@ -79,3 +92,15 @@ class PromptTemplateForm(forms.ModelForm):
                 "rows": 4, "placeholder": "{description}, {style}, golden hour, cinematic lighting",
             })
         }
+
+    def clean_nom(self):
+        nom = " ".join((self.cleaned_data.get("nom") or "").split())
+        if not nom:
+            raise forms.ValidationError("Le nom ne peut pas être vide.")
+        return nom
+
+    def clean_template_prompt(self):
+        prompt = (self.cleaned_data.get("template_prompt") or "").strip()
+        if not prompt:
+            raise forms.ValidationError("Le prompt ne peut pas être vide.")
+        return prompt

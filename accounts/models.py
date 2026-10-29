@@ -89,6 +89,10 @@ class User(AbstractUser):
     def display_name(self):
         return self.get_full_name() or self.username
 
+    @property
+    def two_factor_enabled(self):
+        return TwoFactorDevice.objects.filter(user=self).exists()
+
 
 class Profile(models.Model):
     """Profil étendu (OneToOne avec User)."""
@@ -159,6 +163,41 @@ class PersonalNote(models.Model):
 
     def __str__(self):
         return f"Note privée de {self.owner} sur {self.friend}"
+
+
+class TwoFactorDevice(models.Model):
+    """Double authentification TOTP d'un utilisateur (la ligne existe seulement si la 2FA est active)."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="two_factor")
+    secret = models.CharField(max_length=64)
+    # Empreintes SHA-256 des codes de secours encore utilisables.
+    recovery_codes = models.JSONField(default=list, blank=True)
+    # Dernier pas de temps accepté : un même code ne peut pas être rejoué.
+    last_used_step = models.BigIntegerField(default=0)
+    date_activation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "double authentification"
+        verbose_name_plural = "doubles authentifications"
+
+    def __str__(self):
+        return f"2FA de {self.user}"
+
+    def verify(self, code):
+        """Valide un code TOTP ou consomme un code de secours."""
+        from . import two_factor
+
+        step = two_factor.match_totp(self.secret, code, self.last_used_step)
+        if step is not None:
+            self.last_used_step = step
+            self.save(update_fields=["last_used_step"])
+            return True
+        digest = two_factor.hash_recovery_code(code)
+        if digest in self.recovery_codes:
+            self.recovery_codes = [c for c in self.recovery_codes if c != digest]
+            self.save(update_fields=["recovery_codes"])
+            return True
+        return False
 
 
 class Follow(models.Model):

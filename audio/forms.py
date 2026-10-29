@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 
 from .models import AudioComment, AudioPost, Transcription
@@ -34,6 +36,9 @@ class AudioPostUpdateForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 3, "placeholder": "Modifier la description de ton vocal..."}),
         }
 
+    def clean_description(self):
+        return (self.cleaned_data.get("description") or "").strip()
+
 
 class AudioCommentForm(forms.ModelForm):
     class Meta:
@@ -57,6 +62,14 @@ class TranscriptionForm(forms.ModelForm):
         fields = ("texte", "langue")
         widgets = {"texte": forms.Textarea(attrs={"rows": 5})}
 
+    def clean_texte(self):
+        texte = (self.cleaned_data.get("texte") or "").strip()
+        if not texte:
+            raise forms.ValidationError("La transcription ne peut pas être vide.")
+        return texte
+
     def clean_langue(self):
-        lang = self.cleaned_data.get("langue", "").strip().lower()
-        return lang[:10]
+        lang = (self.cleaned_data.get("langue") or "").strip().lower()
+        if lang and not re.fullmatch(r"[a-z]{2,3}(-[a-z]{2})?", lang):
+            raise forms.ValidationError("Code de langue invalide (ex. : fr, en, ar, fr-fr).")
+        return lang

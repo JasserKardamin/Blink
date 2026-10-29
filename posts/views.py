@@ -3,7 +3,7 @@ from itertools import chain
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -15,7 +15,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 from audio.models import AudioPost, Transcription
 from audio.services import transcribe_by_id
 from core.mixins import OwnerRequiredMixin, SuccessMessageDeleteMixin, json_or_redirect
-from core.models import Notification, notify
+from core.models import Notification, Report, notify
 from core.tasks import run_async
 from faces.models import TagSuggestion
 from faces.services import detect_faces_by_post_id
@@ -208,10 +208,10 @@ class ReportCreateView(LoginRequiredMixin, VisiblePostMixin, CreateView):
         post = self.get_post()
         form.instance.auteur = self.request.user
         form.instance.post = post
-        try:
-            with transaction.atomic():
-                form.save()
-            messages.success(self.request, "Merci, la modération va examiner cette publication.")
-        except IntegrityError:
+        # Plus de contrainte unique en base (migration core 0002) : on vérifie ici.
+        if Report.objects.filter(auteur=self.request.user, post=post).exists():
             messages.info(self.request, "Tu as déjà signalé cette publication.")
+        else:
+            form.save()
+            messages.success(self.request, "Merci, la modération va examiner cette publication.")
         return redirect(post.get_absolute_url())

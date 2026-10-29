@@ -7,7 +7,8 @@
     <img src="{{ post.image.url }}" class="w-16 h-16 rounded-xl object-cover" alt="">
     <div><h1 class="text-xl">Signaler la publication</h1><p class="text-sm text-muted">de {{ post.auteur.display_name }}</p></div>
   </div>
-  <form method="post" class="space-y-4">{% csrf_token %}
+  <form method="post" class="space-y-4" novalidate>{% csrf_token %}
+    {% include "partials/form_errors.html" %}
     {% include "partials/form_field.html" with field=form.motif %}
     {% include "partials/form_field.html" with field=form.details %}
     <div class="flex gap-3">

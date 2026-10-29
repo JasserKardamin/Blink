@@ -12,7 +12,8 @@
       <p class="text-sm text-muted">Ajustez le motif ou apportez des précisions</p>
     </div>
   </div>
-  <form method="post" class="space-y-4">{% csrf_token %}
+  <form method="post" class="space-y-4" novalidate>{% csrf_token %}
+    {% include "partials/form_errors.html" %}
     {% include "partials/form_field.html" with field=form.motif %}
     {% include "partials/form_field.html" with field=form.details %}
     <div class="flex gap-3 pt-2">

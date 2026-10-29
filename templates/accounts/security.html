@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% load blink_tags %}
+{% block title %}Sécurité{% endblock %}
+{% block content %}
+<h1 class="text-2xl mb-6">Sécurité du compte</h1>
+
+{% if recovery_codes %}
+<section class="card-pad space-y-3 border border-maya/40 mb-6">
+  <h2 class="section-title">Tes codes de secours</h2>
+  <p class="text-sm text-muted">Note-les maintenant et garde-les en lieu sûr : ils ne seront plus affichés. Chaque code permet de te connecter <b class="text-alice">une seule fois</b> si tu n'as pas ton téléphone.</p>
+  <ul class="grid grid-cols-2 gap-2 font-mono text-alice">
+    {% for code in recovery_codes %}<li class="rounded-xl bg-surface2 px-3 py-2 text-center">{{ code }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card-pad space-y-3 mb-6">
+  <div class="flex items-center gap-3">
+    {% icon 'lock' 'w-5 h-5 text-maya' %}
+    <h2 class="section-title">Mot de passe</h2>
+  </div>
+  <p class="text-sm text-muted">Change régulièrement ton mot de passe et n'utilise pas le même que sur d'autres sites.</p>
+  <a href="{% url 'accounts:password_change' %}" class="btn-outline btn-sm">Changer de mot de passe</a>
+</section>
+
+<section class="card-pad space-y-3">
+  <div class="flex items-center gap-3">
+    {% icon 'shield' 'w-5 h-5 text-maya' %}
+    <h2 class="section-title">Double authentification</h2>
+    {% if device %}<span class="badge badge-green">Activée</span>{% else %}<span class="badge badge-muted">Désactivée</span>{% endif %}
+  </div>
+  {% if device %}
+    <p class="text-sm text-muted">À chaque connexion, un code de ton application d'authentification t'est demandé en plus du mot de passe. Activée le {{ device.date_activation|date:"j F Y" }}.</p>
+    <p class="text-sm text-muted">Codes de secours restants : <b class="text-alice">{{ device.recovery_codes|length }}</b></p>
+    <div class="flex flex-wrap gap-3">
+      <a href="{% url 'accounts:two_factor_codes' %}" class="btn-outline btn-sm">Nouveaux codes de secours</a>
+      <a href="{% url 'accounts:two_factor_disable' %}" class="btn-ghost btn-sm text-salmon">Désactiver</a>
+    </div>
+  {% else %}
+    <p class="text-sm text-muted">Protège ton compte avec un code à 6 chiffres généré par une application (Google Authenticator, Microsoft Authenticator, Authy, 2FAS…), en plus de ton mot de passe.</p>
+    <a href="{% url 'accounts:two_factor_setup' %}" class="btn-primary btn-sm">Activer la double authentification</a>
+  {% endif %}
+</section>
+{% endblock %}

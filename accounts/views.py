@@ -1,20 +1,43 @@
+import time
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import (
+    LoginView,
+    PasswordChangeView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.db import transaction
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, resolve_url
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, TemplateView, UpdateView
 
 from core.models import Notification, notify
 from core.tasks import run_async
 from faces.services import encode_user_by_id
 
-from .forms import LoginForm, PersonalNoteForm, ProfileForm, SignUpForm, UserUpdateForm
-from .models import Friendship, PersonalNote, User
+from . import two_factor
+from .forms import (
+    BlinkPasswordChangeForm,
+    BlinkPasswordResetForm,
+    BlinkSetPasswordForm,
+    LoginForm,
+    PersonalNoteForm,
+    ProfileForm,
+    SignUpForm,
+    TwoFactorConfirmForm,
+    TwoFactorLoginForm,
+    TwoFactorSetupForm,
+    UserUpdateForm,
+)
+from .models import Friendship, PersonalNote, TwoFactorDevice, User
 
 
 class SignUpView(CreateView):
@@ -38,6 +61,205 @@ class BlinkLoginView(LoginView):
     form_class = LoginForm
     template_name = "accounts/login.html"
     redirect_authenticated_user = True
+
+    def form_valid(self, form):
+        user = form.get_user()
+        if not user.two_factor_enabled:
+            return super().form_valid(form)
+        # Mot de passe correct, mais la session n'est ouverte qu'après le code 2FA.
+        session = self.request.session
+        session.cycle_key()
+        session[two_factor.SESSION_PENDING_USER] = user.pk
+        session[two_factor.SESSION_PENDING_BACKEND] = user.backend
+        session[two_factor.SESSION_PENDING_NEXT] = self.get_redirect_url()
+        session[two_factor.SESSION_PENDING_SINCE] = time.time()
+        session[two_factor.SESSION_ATTEMPTS] = 0
+        return redirect("accounts:login_2fa")
+
+
+def _clear_pending_login(session):
+    for key in (two_factor.SESSION_PENDING_USER, two_factor.SESSION_PENDING_BACKEND, two_factor.SESSION_PENDING_NEXT,
+                two_factor.SESSION_PENDING_SINCE, two_factor.SESSION_ATTEMPTS):
+        session.pop(key, None)
+
+
+class TwoFactorLoginView(FormView):
+    """Deuxième étape de la connexion : code TOTP ou code de secours."""
+
+    form_class = TwoFactorLoginForm
+    template_name = "accounts/login_2fa.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        session = request.session
+        user_id = session.get(two_factor.SESSION_PENDING_USER)
+        started = session.get(two_factor.SESSION_PENDING_SINCE, 0)
+        if not user_id or time.time() - started > settings.TWO_FACTOR_LOGIN_TIMEOUT:
+            _clear_pending_login(session)
+            if user_id:
+                messages.info(request, "Le délai de vérification a expiré. Reconnecte-toi.")
+            return redirect("accounts:login")
+        self.pending_user = User.objects.filter(pk=user_id, is_active=True).select_related("two_factor").first()
+        if self.pending_user is None or not self.pending_user.two_factor_enabled:
+            _clear_pending_login(session)
+            return redirect("accounts:login")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "device": self.pending_user.two_factor}
+
+    def form_valid(self, form):
+        session = self.request.session
+        backend = session.get(two_factor.SESSION_PENDING_BACKEND)
+        next_url = session.get(two_factor.SESSION_PENDING_NEXT) or resolve_url(settings.LOGIN_REDIRECT_URL)
+        _clear_pending_login(session)
+        login(self.request, self.pending_user, backend=backend)
+        if len(self.pending_user.two_factor.recovery_codes) <= 2:
+            messages.warning(self.request, "Il te reste peu de codes de secours : pense à en générer de nouveaux.")
+        return redirect(next_url)
+
+    def form_invalid(self, form):
+        session = self.request.session
+        session[two_factor.SESSION_ATTEMPTS] = session.get(two_factor.SESSION_ATTEMPTS, 0) + 1
+        if session[two_factor.SESSION_ATTEMPTS] >= settings.TWO_FACTOR_MAX_ATTEMPTS:
+            _clear_pending_login(session)
+            messages.error(self.request, "Trop de codes incorrects. Reconnecte-toi.")
+            return redirect("accounts:login")
+        return super().form_invalid(form)
+
+
+# --- Mot de passe ---------------------------------------------------------------
+
+class BlinkPasswordResetView(PasswordResetView):
+    form_class = BlinkPasswordResetForm
+    template_name = "accounts/password_reset_form.html"
+    email_template_name = "accounts/emails/password_reset.txt"
+    html_email_template_name = "accounts/emails/password_reset.html"
+    subject_template_name = "accounts/emails/password_reset_subject.txt"
+    success_url = reverse_lazy("accounts:password_reset_done")
+
+
+class BlinkPasswordResetDoneView(PasswordResetDoneView):
+    template_name = "accounts/password_reset_done.html"
+
+
+class BlinkPasswordResetConfirmView(PasswordResetConfirmView):
+    form_class = BlinkSetPasswordForm
+    template_name = "accounts/password_reset_confirm.html"
+    success_url = reverse_lazy("accounts:password_reset_complete")
+
+
+class BlinkPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = "accounts/password_reset_complete.html"
+
+
+class BlinkPasswordChangeView(PasswordChangeView):
+    form_class = BlinkPasswordChangeForm
+    template_name = "accounts/password_change.html"
+    success_url = reverse_lazy("accounts:security")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "Mot de passe modifié.")
+        return response
+
+
+# --- Sécurité / double authentification -------------------------------------------
+
+class SecurityView(LoginRequiredMixin, TemplateView):
+    template_name = "accounts/security.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        device = TwoFactorDevice.objects.filter(user=self.request.user).first()
+        ctx["device"] = device
+        ctx["recovery_codes"] = self.request.session.pop("2fa_new_recovery_codes", None)
+        return ctx
+
+
+def _show_recovery_codes(request, codes):
+    """Les codes en clair ne sont affichés qu'une fois, sur la page Sécurité."""
+    request.session["2fa_new_recovery_codes"] = codes
+
+
+class TwoFactorSetupView(LoginRequiredMixin, FormView):
+    form_class = TwoFactorSetupForm
+    template_name = "accounts/two_factor_setup.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.two_factor_enabled:
+            return redirect("accounts:security")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_secret(self):
+        secret = self.request.session.get(two_factor.SESSION_SETUP_SECRET)
+        if not secret:
+            secret = two_factor.new_secret()
+            self.request.session[two_factor.SESSION_SETUP_SECRET] = secret
+        return secret
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "secret": self.get_secret()}
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        secret = self.get_secret()
+        ctx["secret"] = " ".join(secret[i:i + 4] for i in range(0, len(secret), 4))
+        ctx["qr_code"] = two_factor.qr_code_svg(two_factor.provisioning_uri(self.request.user, secret))
+        return ctx
+
+    def form_valid(self, form):
+        codes, hashes = two_factor.generate_recovery_codes()
+        TwoFactorDevice.objects.create(
+            user=self.request.user, secret=form.secret, recovery_codes=hashes, last_used_step=form.step,
+        )
+        self.request.session.pop(two_factor.SESSION_SETUP_SECRET, None)
+        _show_recovery_codes(self.request, codes)
+        messages.success(self.request, "Double authentification activée.")
+        return redirect("accounts:security")
+
+
+class TwoFactorRequiredMixin(LoginRequiredMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not request.user.two_factor_enabled:
+            return redirect("accounts:security")
+        return super().dispatch(request, *args, **kwargs)
+
+
+class TwoFactorDisableView(TwoFactorRequiredMixin, FormView):
+    form_class = TwoFactorConfirmForm
+    template_name = "accounts/two_factor_confirm.html"
+    extra_context = {
+        "title": "Désactiver la double authentification",
+        "intro": "Ton compte ne sera plus protégé que par ton mot de passe.",
+        "button": "Désactiver",
+        "danger": True,
+    }
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "user": self.request.user}
+
+    def form_valid(self, form):
+        TwoFactorDevice.objects.filter(user=self.request.user).delete()
+        messages.success(self.request, "Double authentification désactivée.")
+        return redirect("accounts:security")
+
+
+class RecoveryCodesRegenerateView(TwoFactorDisableView):
+    extra_context = {
+        "title": "Nouveaux codes de secours",
+        "intro": "Les anciens codes de secours ne fonctionneront plus.",
+        "button": "Générer de nouveaux codes",
+        "danger": False,
+    }
+
+    def form_valid(self, form):
+        codes, hashes = two_factor.generate_recovery_codes()
+        device = self.request.user.two_factor
+        device.recovery_codes = hashes
+        device.save(update_fields=["recovery_codes"])
+        _show_recovery_codes(self.request, codes)
+        messages.success(self.request, "Nouveaux codes de secours générés.")
+        return redirect("accounts:security")
 
 
 class ProfileDetailView(DetailView):
@@ -181,7 +403,7 @@ class FriendRequestView(LoginRequiredMixin, View):
         existing = me.friendship_with(target)
         if existing is None:
             Friendship.objects.create(user_from=me, user_to=target)
-            notify(target, Notification.Type.DEMANDE_AMI, f"{me} t'a envoyé une demande d'ami.",
+            notify(target, Notification.Type.AMI, f"{me} t'a envoyé une demande d'ami.",
                    acteur=me, lien=reverse("accounts:friends"))
             messages.success(request, f"Demande envoyée à {target}.")
         elif existing.user_to == me and existing.statut != Friendship.Statut.ACCEPTE:
@@ -199,7 +421,7 @@ def _accept(friendship):
     friendship.save(update_fields=["statut"])
     friendship.user_to.follow(friendship.user_from)
     friendship.user_from.follow(friendship.user_to)
-    notify(friendship.user_from, Notification.Type.AMI_ACCEPTE,
+    notify(friendship.user_from, Notification.Type.AMI,
            f"{friendship.user_to} a accepté ta demande d'ami.",
            acteur=friendship.user_to, lien=friendship.user_to.get_absolute_url())
 
@@ -236,6 +458,6 @@ class FollowToggleView(LoginRequiredMixin, View):
             request.user.unfollow(target)
         elif target != request.user:
             request.user.follow(target)
-            notify(target, Notification.Type.ABONNEMENT, f"{request.user} s'est abonné(e) à toi.",
+            notify(target, Notification.Type.AMI, f"{request.user} s'est abonné(e) à toi.",
                    acteur=request.user, lien=request.user.get_absolute_url())
         return redirect(request.POST.get("next") or target.get_absolute_url())

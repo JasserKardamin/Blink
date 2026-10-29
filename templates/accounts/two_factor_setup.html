@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Activer la double authentification{% endblock %}
+{% block content %}
+<a href="{% url 'accounts:security' %}" class="link text-sm">← Sécurité</a>
+<h1 class="text-2xl mt-2 mb-6">Activer la double authentification</h1>
+<section class="card-pad space-y-5">
+  <ol class="space-y-2 text-sm text-muted list-decimal list-inside">
+    <li>Installe une application d'authentification (Google Authenticator, Microsoft Authenticator, Authy, 2FAS…).</li>
+    <li>Scanne ce QR code avec l'application.</li>
+    <li>Saisis le code à 6 chiffres qu'elle affiche.</li>
+  </ol>
+  <div class="flex flex-col sm:flex-row items-center gap-6">
+    <div class="rounded-2xl bg-white p-2 shrink-0">{{ qr_code|safe }}</div>
+    <div class="text-sm text-muted space-y-1">
+      <p>Impossible de scanner ? Saisis cette clé dans l'application :</p>
+      <p class="font-mono text-alice break-all select-all">{{ secret }}</p>
+    </div>
+  </div>
+  <form method="post" class="space-y-4" novalidate>{% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    {% include "partials/form_field.html" with field=form.code %}
+    <div class="flex gap-3">
+      <button class="btn-primary">Activer</button>
+      <a href="{% url 'accounts:security' %}" class="btn-outline">Annuler</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
