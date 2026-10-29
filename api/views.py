@@ -9,12 +9,14 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, permissions, status, viewsets
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
-from accounts.models import Friendship, User
+from accounts.models import Friendship, TwoFactorDevice, User
 from aistudio.models import AIPromptTemplate, GeneratedImage, ImageFilter
 from aistudio.services import copy_source_image, process_generation_by_id
 from audio.models import AudioComment, AudioPost, Transcription
@@ -338,3 +340,21 @@ def ai_status(request):
         "face_recognition": model_path("sface")[0].exists(),
     })
 
+
+
+class TwoFactorObtainAuthToken(ObtainAuthToken):
+    """`POST /api/auth/token/` : identifiants + champ `otp` si la double authentification est active."""
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        device = TwoFactorDevice.objects.filter(user=user).first()
+        if device is not None:
+            otp = str(request.data.get("otp", "")).strip()
+            if not otp:
+                return Response({"otp": ["Code de double authentification requis."]}, status=status.HTTP_400_BAD_REQUEST)
+            if not device.verify(otp):
+                return Response({"otp": ["Code incorrect ou déjà utilisé."]}, status=status.HTTP_400_BAD_REQUEST)
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": token.key})

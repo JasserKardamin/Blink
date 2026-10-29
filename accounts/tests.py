@@ -54,7 +54,7 @@ class FriendshipTests(BlinkTestCase):
         self.client.post(reverse("accounts:friend_request", args=["sami"]))
         fr = Friendship.objects.get(user_from=self.nour, user_to=self.sami)
         self.assertEqual(fr.statut, Friendship.Statut.EN_ATTENTE)
-        self.assertTrue(Notification.objects.filter(destinataire=self.sami, type="demande_ami").exists())
+        self.assertTrue(Notification.objects.filter(destinataire=self.sami, type="ami").exists())
 
         self.client.force_login(self.sami)
         self.client.post(reverse("accounts:friend_respond", args=[fr.pk, "accepter"]))

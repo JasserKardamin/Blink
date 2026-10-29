@@ -2,7 +2,8 @@
 {% block title %}Commentaire{% endblock %}
 {% block content %}
 <h1 class="text-2xl mb-5">{% if object %}Modifier le commentaire{% else %}Commenter{% endif %}</h1>
-<form method="post" class="card-pad space-y-4">{% csrf_token %}
+<form method="post" class="card-pad space-y-4" novalidate>{% csrf_token %}
+  {% include "partials/form_errors.html" %}
   {% include "partials/form_field.html" with field=form.contenu %}
   <div class="flex gap-3">
     <button class="btn-primary">Enregistrer</button>

@@ -1,7 +1,13 @@
 from datetime import timedelta
 
 from django.contrib import admin
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -11,6 +17,17 @@ class BlinkAdminSite(admin.AdminSite):
     site_title = "Blink admin"
     index_title = "Tableau de bord"
     index_template = "admin/blink_index.html"
+
+    def login(self, request, extra_context=None):
+        """Connexion via la page Blink (qui applique la double authentification)."""
+        next_url = request.GET.get(REDIRECT_FIELD_NAME, "")
+        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            next_url = reverse("admin:index", current_app=self.name)
+        if request.user.is_authenticated:
+            if request.user.is_active and request.user.is_staff:
+                return redirect(next_url)
+            raise PermissionDenied("Accès réservé à l'équipe de modération.")
+        return redirect_to_login(next_url)
 
     def index(self, request, extra_context=None):
         extra_context = {**(extra_context or {}), "stats": self.get_stats()}

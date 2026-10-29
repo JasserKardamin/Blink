@@ -55,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.FriendlyNotFoundMiddleware",
 ]
 
 ROOT_URLCONF = "blink.urls"
@@ -94,10 +95,34 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "core:home"
+# Lien de réinitialisation du mot de passe valable 1 heure.
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "3600"))
+
+# --- E-mail ------------------------------------------------------------------
+# Sans EMAIL_HOST, les e-mails sont affichés dans la console (développement).
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST else "django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = 20
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER or "Blink <no-reply@blink.local>"
+
+# --- Double authentification (TOTP) -------------------------------------------
+TWO_FACTOR_ISSUER = os.getenv("TWO_FACTOR_ISSUER", "Blink")
+# Délai pour saisir le code après le mot de passe, et nombre d'essais autorisés.
+TWO_FACTOR_LOGIN_TIMEOUT = 300
+TWO_FACTOR_MAX_ATTEMPTS = 5
 
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = os.getenv("TIME_ZONE", "Africa/Tunis")

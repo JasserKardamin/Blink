@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<a href="{% url 'accounts:security' %}" class="link text-sm">← Sécurité</a>
+<h1 class="text-2xl mt-2 mb-6">{{ title }}</h1>
+<form method="post" class="card-pad space-y-4" novalidate>{% csrf_token %}
+  <p class="text-sm text-muted">{{ intro }} Confirme avec ton mot de passe et un code de ton application.</p>
+  {% include "partials/form_errors.html" %}
+  {% include "partials/form_field.html" with field=form.password %}
+  {% include "partials/form_field.html" with field=form.code %}
+  <div class="flex gap-3">
+    <button class="{% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ button }}</button>
+    <a href="{% url 'accounts:security' %}" class="btn-outline">Annuler</a>
+  </div>
+</form>
+{% endblock %}

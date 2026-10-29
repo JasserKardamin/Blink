@@ -19,3 +19,13 @@ def validate_audio_file(file):
     ext = file.name.rsplit(".", 1)[-1].lower() if "." in file.name else ""
     if ext not in AUDIO_EXTENSIONS:
         raise ValidationError("Format audio non supporté (webm, ogg, mp3, wav, m4a, flac).")
+
+
+IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
+
+
+def validate_image_format(file):
+    """À utiliser après forms.ImageField, qui a déjà ouvert l'image avec Pillow."""
+    image = getattr(file, "image", None)
+    if image is not None and image.format not in IMAGE_FORMATS:
+        raise ValidationError("Format d'image non supporté (JPEG, PNG, WEBP ou GIF).")

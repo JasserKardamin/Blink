@@ -11,7 +11,7 @@
         <p class="text-xs text-muted mt-0.5">{{ n.date|short_since }}</p>
       </div>
       <span class="text-muted">
-        {% if n.type == 'reaction' %}{% icon 'heart' 'w-5 h-5 text-salmon' %}{% elif n.type == 'commentaire' %}{% icon 'message' 'w-5 h-5 text-maya' %}{% elif n.type == 'commentaire_vocal' %}{% icon 'mic' 'w-5 h-5 text-salmon' %}{% elif n.type == 'tag' %}{% icon 'user-check' 'w-5 h-5 text-maya' %}{% elif n.type == 'demande_ami' or n.type == 'ami_accepte' %}{% icon 'user-plus' 'w-5 h-5 text-peri' %}{% else %}{% icon 'bell' 'w-5 h-5' %}{% endif %}
+        {% if n.type == 'reaction' %}{% icon 'heart' 'w-5 h-5 text-salmon' %}{% elif n.type == 'commentaire' %}{% icon 'message' 'w-5 h-5 text-maya' %}{% elif n.type == 'commentaire_vocal' %}{% icon 'mic' 'w-5 h-5 text-salmon' %}{% elif n.type == 'tag' %}{% icon 'user-check' 'w-5 h-5 text-maya' %}{% elif n.type == 'ami' or n.type == 'demande_ami' or n.type == 'ami_accepte' %}{% icon 'user-plus' 'w-5 h-5 text-peri' %}{% else %}{% icon 'bell' 'w-5 h-5' %}{% endif %}
       </span>
       {% if n.pk in unread_ids %}<span class="w-2 h-2 rounded-full bg-maya"></span>{% endif %}
     </a>

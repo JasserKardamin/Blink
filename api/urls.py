@@ -1,5 +1,5 @@
-from django.urls import include, path
-from rest_framework.authtoken.views import obtain_auth_token
+from django.urls import include, path, reverse_lazy
+from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 
 from core import api_views as core_api
@@ -38,6 +38,8 @@ urlpatterns = [
     path("", include(router.urls)),
     path("ai/caption/", views.generate_caption, name="ai_caption"),
     path("ai/status/", views.ai_status, name="ai_status"),
-    path("auth/token/", obtain_auth_token, name="token"),
+    path("auth/token/", views.TwoFactorObtainAuthToken.as_view(), name="token"),
+    # La page de connexion de l'API navigable passe par Blink (double authentification).
+    path("auth/login/", RedirectView.as_view(url=reverse_lazy("accounts:login"), query_string=True)),
     path("auth/", include("rest_framework.urls")),
 ]

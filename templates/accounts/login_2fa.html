@@ -1,0 +1,12 @@
+{% extends "accounts/auth_card.html" %}{% load blink_tags %}
+{% block title %}Vérification{% endblock %}
+{% block card_title %}Vérification en deux étapes{% endblock %}
+{% block card_intro %}<p class="text-muted text-sm mt-1">Saisis le code à 6 chiffres de ton application d'authentification, ou l'un de tes codes de secours.</p>{% endblock %}
+{% block card_body %}
+<form method="post" class="space-y-4" novalidate>{% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  {% include "partials/form_field.html" with field=form.code %}
+  <button class="btn-primary w-full">Vérifier</button>
+</form>
+<p class="text-center mt-6 text-sm"><a href="{% url 'accounts:login' %}" class="link">Annuler</a></p>
+{% endblock %}
